@@ -1,9 +1,12 @@
 import {
   AgentRuntime,
   composeContext,
+  Content,
   elizaLogger,
   generateMessageResponse,
   generateText,
+  getEmbeddingZeroVector,
+  Memory,
   ModelClass,
   stringToUuid,
   trimTokens,
@@ -16,7 +19,9 @@ import { twitterMessageHandlerTemplate, twitterPostTemplate } from '../agent/con
 import { DEFAULT_MAX_TWEET_LENGTH, validateTwitterConfig } from '../agent/environment.js';
 import { ClientBase } from '../agent/base.js';
 import { Tweet } from 'agent-twitter-client';
+import { DirectClient } from '@elizaos/client-direct';
 import charactersModel from '../models/character.model.js';
+import userModel from '../models/user.model.js';
 
 export class AgentController {
   public getAllAgents = async (req: Request, res: Response) => {
@@ -37,6 +42,122 @@ export class AgentController {
       res.status(200).json({ agents: [], error: 'Error fetching agents ' + error.toString() });
     }
   };
+
+  public createRoom =  async(req: Request, res: Response) => {
+    try {
+      const userId = req.body.walletAddress
+      const agentId = req.body.nftId
+      
+      let roomId: string;
+
+      const context = `
+      You have to give me only a word to guess and the category of the word in json format. Don't add anything except word and category. 
+      Example:
+      {
+      "word":"Elephant",
+      "category":"Animal",
+      }
+      `;
+      const agentRuntime: AgentRuntime = global.agentsInMemory.get(agentId);
+      const response = await generateText({
+          runtime: agentRuntime,
+          context: context,
+          modelClass: ModelClass.SMALL,
+          stop: ['\n'],
+          });       
+      let word = JSON.parse(response).word
+      let category = JSON.parse(response).category
+      let userInfo = await userModel.findOne({ userId });
+      
+      if (userInfo) {
+        roomId = userInfo.roomId;
+
+      } else {
+        roomId = await global.db.createRoom();
+        userInfo = await userModel.create({userId, agentId, roomId, word, category });
+      }
+
+      const agentCharacter = await charactersModel.findOne({agentId});
+
+      if (!agentCharacter){
+        console.log("Agent doesnot exist")
+      }
+      else{
+        if ((agentCharacter as any).status === 'on') {
+          await startAgent(agentCharacter, global.directClient as DirectClient);
+        }
+      }
+
+      
+      res.status(200).json({ userInfo: userInfo, agentCharacter:agentCharacter, error: null });
+    } catch (error) {
+      res.status(200).json({ userInfo: {}, error: 'Error creating room ' + error.toString() });
+    }
+  }
+
+  // public playWithUser = async(req: Request, res: Response) => {
+  //   const userId = req.body.walletAddress
+  //   - category of the word
+  //   - wallet_address
+  //   Working:
+  //   - Give AI the context of the game, category of the word and get initial question suggestion given the category of the word.
+  //   Response
+  //   - gameStatus
+  //   - yes/no question 
+  // }
+
+  // public greetUser = async (req: Request, res: Response) => {
+  //   try {
+  //     const agentId = "2"
+  //     const agentRuntime: AgentRuntime = global.agentsInMemory.get(agentId);
+  //     const context = "You are playing guess the word game as a companion. Generate an encouraging greeting message for the player"
+  //     const greetMessage = await generateText({
+  //       runtime: agentRuntime,
+  //       context,
+  //       modelClass: ModelClass.SMALL,
+  //     });
+  //     res.status(200).json({ greetings: greetMessage, error: null });
+  //   } catch (error) {
+  //     res.status(200).json({ agents: [], error: 'Error getting greetings' + error.toString() });
+  //   }
+  // };
+
+  // public playWithUser = async(req: Request, res: Response)=>{
+  //   try {
+  //     const agentId = "2"
+  //     const agentRuntime: AgentRuntime = global.agentsInMemory.get(agentId);
+  //     let memory: Memory = agentRuntime.composeState()
+  //     const content: Content
+  //     if (!memory) {
+  //       const roomId = stringToUuid("Game Room" + '-' + agentRuntime.agentId);
+  //       const memory = await agentRuntime.messageManager.createMemory({
+  //         id: stringToUuid(roomId + '-' + agentRuntime.agentId),
+  //         agentId: agentRuntime.agentId,
+  //         content: {
+  //           text: ,
+  //         },
+  //         roomId,
+  //         userId: agentRuntime.agentId,
+  //         embedding: getEmbeddingZeroVector(),
+  //       });
+  //     }
+  
+  //     let new_memory = await agentRuntime.messageManager.addEmbeddingToMemory(memory);
+
+  //     await agentRuntime.messageManager.createMemory(new_memory);
+  //     const recentMessages = 
+  //     const context = "You are playing guess the word game as a companion. You are given only the category of the word. Your goal is to help player guess the game. For first guesses provide a yes/no question to pinpoint the food given the {category}. If you have user previous guessses then suggest more narrowing questions to help user guess the word."
+
+  //     const greetMessage = await generateText({
+  //       runtime: agentRuntime,
+  //       context,
+  //       modelClass: ModelClass.SMALL,
+  //     });
+  //     res.status(200).json({ greetings: greetMessage, error: null });
+  //   } catch (error) {
+  //     res.status(200).json({ agents: [], error: 'Error getting greetings' + error.toString() });
+  //   }
+  // }
 
   public toggleAgent = async (req: Request, res: Response) => {
     const agentId = req.body.agentId;
