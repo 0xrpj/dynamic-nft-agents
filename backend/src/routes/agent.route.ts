@@ -35,8 +35,11 @@ export class AgentRoute implements Routes {
     this.router.post(`${this.path}/postTweet`, this.agentController.postTweet);
     this.router.post(`${this.path}/replyTweet`, this.agentController.replyTweet);
     this.router.post(`${this.path}/quoteTweet`, this.agentController.quoteTweet);
-    this.router.post(`${this.path}/createRoom`, this.agentController.createRoom);  
-    // this.router.post(`${this.path}/greetUser`, this.agentController.greetUser); 
-    // this.router.post(`${this.path}/playWithUser`, this.agentController.playWithUser); 
+    this.router.post(`${this.path}/createRoom`, this.agentController.createRoom);
+    this.router.post(`${this.path}/guessWord`, this.agentController.guessWord);
+    this.router.post(`${this.path}/reply`, this.agentController.reply);
+    this.router.post(`${this.path}/gameInfo`, this.agentController.gameInfo);
+    // this.router.post(`${this.path}/greetUser`, this.agentController.greetUser);
+    // this.router.post(`${this.path}/playWithUser`, this.agentController.playWithUser);
   }
 }

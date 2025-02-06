@@ -22,6 +22,7 @@ import { Tweet } from 'agent-twitter-client';
 import { DirectClient } from '@elizaos/client-direct';
 import charactersModel from '../models/character.model.js';
 import userModel from '../models/user.model.js';
+import { isItRelated, randomWordPicker } from '../utils/util.js';
 
 export class AgentController {
   public getAllAgents = async (req: Request, res: Response) => {
@@ -43,57 +44,167 @@ export class AgentController {
     }
   };
 
-  public createRoom =  async(req: Request, res: Response) => {
+  public gameInfo = async (req: Request, res: Response) => {
     try {
-      const userId = req.body.walletAddress
-      const agentId = req.body.nftId
-      
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+
+      const userInfo = await userModel.findOne({ userId, nftId });
+
+      if (!userInfo) {
+        throw new Error("Link doesn't exist!")
+      }
+
+      res.status(200).json({
+        success: true, userInfo: {
+          score: userInfo.score,
+          level: userInfo.level,
+          attemptsRemaining: userInfo.attemptsRemaining,
+          conversationHistory: userInfo.conversationHistory,
+          category: userInfo.category
+        }
+      });
+
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Error getting game info ' + error.toString() });
+    }
+  };
+
+  public createRoom = async (req: Request, res: Response) => {
+    try {
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+      const agentId = '2';
+
       let roomId: string;
 
-      const context = `
-      You have to give me only a word to guess and the category of the word in json format. Don't add anything except word and category. 
-      Example:
-      {
-      "word":"Elephant",
-      "category":"Animal",
-      }
-      `;
-      const agentRuntime: AgentRuntime = global.agentsInMemory.get(agentId);
-      const response = await generateText({
-          runtime: agentRuntime,
-          context: context,
-          modelClass: ModelClass.SMALL,
-          stop: ['\n'],
-          });       
-      let word = JSON.parse(response).word
-      let category = JSON.parse(response).category
       let userInfo = await userModel.findOne({ userId });
-      
+
       if (userInfo) {
         roomId = userInfo.roomId;
-
       } else {
         roomId = await global.db.createRoom();
-        userInfo = await userModel.create({userId, agentId, roomId, word, category });
+        const wordPicked = randomWordPicker([], 1);
+
+        const word = wordPicked.word.toLowerCase();
+        const category = wordPicked.category;
+
+        userInfo = await userModel.create({ userId, agentId, nftId, roomId, word, category });
       }
 
-      const agentCharacter = await charactersModel.findOne({agentId});
+      const agentCharacter = await charactersModel.findOne({ agentId }, { _id: 0, createdAt: 0, updatedAt: 0, __v: 0 });
 
-      if (!agentCharacter){
-        console.log("Agent doesnot exist")
-      }
-      else{
-        if ((agentCharacter as any).status === 'on') {
-          await startAgent(agentCharacter, global.directClient as DirectClient);
-        }
+      if (!agentCharacter) {
+        throw new Error('Agent doesnot exist');
       }
 
-      
-      res.status(200).json({ userInfo: userInfo, agentCharacter:agentCharacter, error: null });
+      res.status(200).json({ userInfo: userInfo, agent: { elizaId: agentCharacter.id, agentId: agentCharacter.agentId }, error: null });
     } catch (error) {
       res.status(200).json({ userInfo: {}, error: 'Error creating room ' + error.toString() });
     }
-  }
+  };
+
+  public guessWord = async (req: Request, res: Response) => {
+    try {
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+      const guessedWord = req.body.guessedWord.toLowerCase();
+
+      const userInfo = await userModel.findOne({ userId, nftId });
+
+      if (!userInfo) throw new Error("User doesn't exist.")
+
+      await userModel.findOneAndUpdate({ userId, nftId }, {
+        $push: {
+          latestGuesses: {
+            $each: [guessedWord],
+            $slice: -50
+          }
+        }
+      });
+
+      if (userInfo.word.toLowerCase() === guessedWord.toLowerCase()) {
+        await userModel.findOneAndUpdate({ userId, nftId }, { $inc: { score: 1 } });
+        const wordPicked = randomWordPicker(userInfo.latestGuesses, userInfo.level);
+        const word = wordPicked.word.toLowerCase();
+        const category = wordPicked.category;
+        await userModel.findOneAndUpdate({ userId, nftId }, { word, category });
+
+        if (userInfo.score % 3 === 0 && userInfo.score !== 0) {
+          await userModel.findOneAndUpdate(
+            { userId, nftId },
+            {
+              $inc: { level: 1 },
+              $set: { conversationHistory: [] },
+              attemptsRemaining: 3
+            },
+            { new: true }
+          );
+        }
+      } else {
+        const response = await userModel.findOneAndUpdate({ userId, nftId }, { $inc: { attemptsRemaining: -1 } }, { new: true });
+        if (response.attemptsRemaining <= 0) {
+          if (response.level > 1) {
+            await userModel.findOneAndUpdate(
+              { userId, nftId },
+              {
+                $inc: { level: -1 },
+                $set: { conversationHistory: [] },
+                attemptsRemaining: 3
+              },
+              { new: true }
+            );
+          }
+
+          const wordPicked = randomWordPicker(response.latestGuesses, response.level);
+          const word = wordPicked.word.toLowerCase();
+          const category = wordPicked.category;
+          await userModel.findOneAndUpdate({ userId, nftId }, { word, category, attemptsRemaining: 3 });
+
+          res.status(200).json({ success: true, message: 'All attempts depleted. Resetting word.' });
+          return;
+        } else {
+          res.status(200).json({ success: false, message: 'Incorrect word' });
+          return;
+        }
+      }
+      res.status(200).json({ success: true, message: 'Score updated' });
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Error processing the guessed word ' + error.toString() });
+    }
+  };
+
+  public reply = async (req: Request, res: Response) => {
+    try {
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+      const question = req.body.question;
+
+      const userInfo = await userModel.findOne({ userId, nftId });
+
+      if (userInfo) {
+        const word = userInfo.word;
+        const category = userInfo.category;
+        // add to conversation history
+        const response = await isItRelated(word, category, question);
+        await userModel.findOneAndUpdate({ userId, nftId }, {
+          $push: {
+            conversationHistory: {
+              question,
+              answer: response,
+            }
+          }
+        });
+        res.status(200).json({ success: true, message: response });
+        return;
+      }
+
+      res.status(500).json({ success: false, message: 'Couldnot answer!' });
+
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Error processing the guessed word ' + error.toString() });
+    }
+  };
 
   // public playWithUser = async(req: Request, res: Response) => {
   //   const userId = req.body.walletAddress
@@ -103,7 +214,7 @@ export class AgentController {
   //   - Give AI the context of the game, category of the word and get initial question suggestion given the category of the word.
   //   Response
   //   - gameStatus
-  //   - yes/no question 
+  //   - yes/no question
   // }
 
   // public greetUser = async (req: Request, res: Response) => {
@@ -141,11 +252,11 @@ export class AgentController {
   //         embedding: getEmbeddingZeroVector(),
   //       });
   //     }
-  
+
   //     let new_memory = await agentRuntime.messageManager.addEmbeddingToMemory(memory);
 
   //     await agentRuntime.messageManager.createMemory(new_memory);
-  //     const recentMessages = 
+  //     const recentMessages =
   //     const context = "You are playing guess the word game as a companion. You are given only the category of the word. Your goal is to help player guess the game. For first guesses provide a yes/no question to pinpoint the food given the {category}. If you have user previous guessses then suggest more narrowing questions to help user guess the word."
 
   //     const greetMessage = await generateText({
