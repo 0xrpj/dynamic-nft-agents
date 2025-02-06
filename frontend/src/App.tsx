@@ -10,8 +10,6 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 function App() {
   const [gameState, setGameState] = useState<GameState>({
     selectedNFT: null,
-    selectedCategory: null,
-    points: 100,
     isDarkMode: true,
   });
 
@@ -52,7 +50,6 @@ function App() {
               element={
                 <NFTSelection
                   onSelect={handleNFTSelect}
-                  points={gameState.points}
                   selectedNFT={gameState.selectedNFT}
                   isDarkMode={gameState.isDarkMode}
                 />
