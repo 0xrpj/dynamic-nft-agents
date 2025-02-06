@@ -1,25 +1,26 @@
 import React, { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
-import { Category, NFTCharacter } from '../types';
+import { NFTCharacter } from '../types';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { useLogin } from "../context/UserContext";
 
 interface GamePlayProps {
-  category: Category;
   nft: NFTCharacter;
   isDarkMode: boolean;
 }
 
-export const GamePlay: React.FC<GamePlayProps> = ({ category, nft, isDarkMode }) => {
+export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [question, setQuestion] = useState('');
   const [guess, setGuess] = useState('');
+  const { logOut } = useLogin();
 
   return (
     <div className="p-20">
       <div className={`p-4 rounded-lg mb-8 ${isDarkMode ? 'bg-gray-800' : 'bg-indigo-100'}`}>
         <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-indigo-400' : 'text-indigo-800'}`}>
-          Category: {category.name}
+          Category: "Food"
         </h2>
       </div>
 
@@ -114,6 +115,16 @@ export const GamePlay: React.FC<GamePlayProps> = ({ category, nft, isDarkMode })
           </Card>
         </div>
       </div>
+      <button
+        onClick={logOut}
+        className={`absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 rounded ${
+          isDarkMode
+            ? "bg-red-600 text-white hover:bg-red-700"
+            : "bg-red-500 text-white hover:bg-red-600"
+        }`}
+      >
+        Logout
+      </button>
     </div>
   );
 };

@@ -3,9 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { Welcome } from "./pages/Welcome";
 import { NFTSelection } from "./pages/NFTSelection";
-import { CategorySelection } from "./pages/CategorySelection";
 import { GamePlay } from "./pages/GamePlay";
-import { GameState, NFTCharacter, Category } from "./types";
+import { GameState, NFTCharacter} from "./types";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
@@ -20,13 +19,6 @@ function App() {
     setGameState((prev) => ({
       ...prev,
       selectedNFT: nft,
-    }));
-  };
-
-  const handleCategorySelect = (category: Category) => {
-    setGameState((prev) => ({
-      ...prev,
-      selectedCategory: category,
     }));
   };
 
@@ -61,30 +53,16 @@ function App() {
                 <NFTSelection
                   onSelect={handleNFTSelect}
                   points={gameState.points}
+                  selectedNFT={gameState.selectedNFT}
                   isDarkMode={gameState.isDarkMode}
                 />
               }
             />
             <Route
-              path="select-category"
-              element={
-                gameState.selectedNFT ? (
-                  <CategorySelection
-                    onSelect={handleCategorySelect}
-                    selectedCategory={gameState.selectedCategory}
-                    isDarkMode={gameState.isDarkMode}
-                  />
-                ) : (
-                  <Navigate to="/select-nft" replace />
-                )
-              }
-            />
-            <Route
               path="gameplay"
               element={
-                gameState.selectedNFT && gameState.selectedCategory ? (
+                gameState.selectedNFT? (
                   <GamePlay
-                    category={gameState.selectedCategory}
                     nft={gameState.selectedNFT}
                     isDarkMode={gameState.isDarkMode}
                   />

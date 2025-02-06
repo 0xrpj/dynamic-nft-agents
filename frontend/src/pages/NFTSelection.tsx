@@ -1,9 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy } from "lucide-react";
+import { Trophy, Play } from "lucide-react";
 import { NFTCharacter } from "../types";
 import { nftCharacters } from "../data/nfts";
 import { Card } from "../components/Card";
+import { Button } from '../components/Button';
 import { PageTitle } from "../components/PageTitle";
 import { useLogin } from "../context/UserContext";
 
@@ -11,15 +12,30 @@ interface NFTSelectionProps {
   onSelect: (nft: NFTCharacter) => void;
   points: number;
   isDarkMode: boolean;
+  selectedNFT: NFTCharacter | null;
 }
 
 export const NFTSelection: React.FC<NFTSelectionProps> = ({
   onSelect,
+  selectedNFT,
   points,
   isDarkMode,
 }) => {
   const navigate = useNavigate();
   const { logOut } = useLogin();
+
+    const handleNFTSelect = (nft: NFTCharacter) => {
+      console.log('Selected nft:', nft.name);
+      onSelect(nft);
+    };
+  
+    const handleStartGame = () => {
+      console.log({selectedNFT})
+      if (selectedNFT) {
+        console.log('Starting game with nft:', selectedNFT.name);
+        navigate('/gameplay');
+      }
+    };
 
   return (
     <div className="p-20">
@@ -37,26 +53,13 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
           <span className="font-semibold">{points} Points</span>
         </div>
       </div>
-      <button
-        onClick={logOut}
-        className={`absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 rounded ${
-          isDarkMode
-            ? "bg-red-600 text-white hover:bg-red-700"
-            : "bg-red-500 text-white hover:bg-red-600"
-        }`}
-      >
-        Logout
-      </button>
-
       <div className="grid grid-cols-1 md:grid-cols-5 m-16 mt-4 ml-0 gap-16">
         {nftCharacters.map((nft) => (
           <Card
             key={nft.id}
             isDarkMode={isDarkMode}
             onClick={() => {
-              console.log("Selected NFT:", nft.name);
-              onSelect(nft);
-              navigate("/select-category");
+              handleNFTSelect(nft)              
             }}
           >
             <img
@@ -76,6 +79,25 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
           </Card>
         ))}
       </div>
+      {selectedNFT && (
+        <Button
+          onClick={handleStartGame}
+          icon={Play}
+          className="mx-auto"
+        >
+          Start Game
+        </Button>
+      )}
+      <button
+        onClick={logOut}
+        className={`absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 rounded ${
+          isDarkMode
+            ? "bg-red-600 text-white hover:bg-red-700"
+            : "bg-red-500 text-white hover:bg-red-600"
+        }`}
+      >
+        Logout
+      </button>
     </div>
   );
 };
