@@ -2,6 +2,7 @@ import {
   AgentRuntime,
   composeContext,
   Content,
+  DatabaseAdapter,
   elizaLogger,
   generateMessageResponse,
   generateText,
@@ -206,69 +207,60 @@ export class AgentController {
     }
   };
 
-  // public playWithUser = async(req: Request, res: Response) => {
-  //   const userId = req.body.walletAddress
-  //   - category of the word
-  //   - wallet_address
-  //   Working:
-  //   - Give AI the context of the game, category of the word and get initial question suggestion given the category of the word.
-  //   Response
-  //   - gameStatus
-  //   - yes/no question
-  // }
+  public playWithUser = async (req: Request, res: Response) => {
+    try {
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+      const userQuestion = req.body.question || null;
 
-  // public greetUser = async (req: Request, res: Response) => {
-  //   try {
-  //     const agentId = "2"
-  //     const agentRuntime: AgentRuntime = global.agentsInMemory.get(agentId);
-  //     const context = "You are playing guess the word game as a companion. Generate an encouraging greeting message for the player"
-  //     const greetMessage = await generateText({
-  //       runtime: agentRuntime,
-  //       context,
-  //       modelClass: ModelClass.SMALL,
-  //     });
-  //     res.status(200).json({ greetings: greetMessage, error: null });
-  //   } catch (error) {
-  //     res.status(200).json({ agents: [], error: 'Error getting greetings' + error.toString() });
-  //   }
-  // };
+      const userInfo = await userModel.findOne({ userId, nftId });
+      const agentRuntime: AgentRuntime = global.agentsInMemory.get(userInfo.agentId);
 
-  // public playWithUser = async(req: Request, res: Response)=>{
-  //   try {
-  //     const agentId = "2"
-  //     const agentRuntime: AgentRuntime = global.agentsInMemory.get(agentId);
-  //     let memory: Memory = agentRuntime.composeState()
-  //     const content: Content
-  //     if (!memory) {
-  //       const roomId = stringToUuid("Game Room" + '-' + agentRuntime.agentId);
-  //       const memory = await agentRuntime.messageManager.createMemory({
-  //         id: stringToUuid(roomId + '-' + agentRuntime.agentId),
-  //         agentId: agentRuntime.agentId,
-  //         content: {
-  //           text: ,
-  //         },
-  //         roomId,
-  //         userId: agentRuntime.agentId,
-  //         embedding: getEmbeddingZeroVector(),
-  //       });
-  //     }
+      const db: DatabaseAdapter = global.db;
+      const participants = await db.getParticipantsForRoom(userInfo.roomId as `${string}-${string}-${string}-${string}-${string}`)
 
-  //     let new_memory = await agentRuntime.messageManager.addEmbeddingToMemory(memory);
+      if (participants.length === 0) {
+        await db.addParticipant(agentRuntime.agentId, userInfo.roomId as `${string}-${string}-${string}-${string}-${string}`);
+      }
 
-  //     await agentRuntime.messageManager.createMemory(new_memory);
-  //     const recentMessages =
-  //     const context = "You are playing guess the word game as a companion. You are given only the category of the word. Your goal is to help player guess the game. For first guesses provide a yes/no question to pinpoint the food given the {category}. If you have user previous guessses then suggest more narrowing questions to help user guess the word."
+      const prompt = `You are an AI companion. You are given only the category of the word. Your goal is to help player guess the game. For first guesses provide a yes/no question to pinpoint the food given the ${userInfo.category}. If you have user previous guessses then suggest more narrowing questions to help user guess the word. You should not be too helpful. The higher the level of the user, the more helpful you should be. Currently, the level of user is ${userInfo.level}. The user has ${userInfo.attemptsRemaining} attempts remaining. The user has already guessed the following words: ${userInfo.latestGuesses.join(', ')}. The user has already answered the following questions: ${userInfo.conversationHistory.map((item: any) => `${item.question}: ${item.answer}`).join(', ')}. 
 
-  //     const greetMessage = await generateText({
-  //       runtime: agentRuntime,
-  //       context,
-  //       modelClass: ModelClass.SMALL,
-  //     });
-  //     res.status(200).json({ greetings: greetMessage, error: null });
-  //   } catch (error) {
-  //     res.status(200).json({ agents: [], error: 'Error getting greetings' + error.toString() });
-  //   }
-  // }
+      User might have asked some question. Here it is: ${userQuestion}.
+
+      As an AI companion your job is to: 
+      - Suggest questions to help user guess the word.
+      - Play with user as a friend. Don't focus on finding the word. Focus on making it fun for the user.
+      - Make fun of user in a light fun way (roast) if user is not answering questions correctly. But remember, you are his friend. You should not give any hurting remarks.
+
+      Don't talk like a real AI. Talk like a human. Short sentences. Maybe make spelling mistakes here and there and grammar does not need to be correct always. To human to to err, so follow that. Don't return any special characters like slash n.
+      `;
+
+      const text = await generateText({
+        runtime: agentRuntime,
+        context: prompt,
+        modelClass: ModelClass.SMALL,
+        stop: ['\n'],
+      });
+
+      let newMemory: Memory = {
+        userId: agentRuntime.agentId,
+        agentId: agentRuntime.agentId,
+        roomId: userInfo.roomId as `${string}-${string}-${string}-${string}-${string}`,
+        content: {
+          text: text,
+        } as Content,
+      };
+
+      const composedState = await agentRuntime.composeState(newMemory);
+      newMemory = await agentRuntime.messageManager.addEmbeddingToMemory(newMemory);
+      await agentRuntime.messageManager.createMemory(newMemory);
+
+      res.status(200).json({ success: true, message: text });
+
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Error helping the user ' + error.toString() });
+    }
+  };
 
   public toggleAgent = async (req: Request, res: Response) => {
     const agentId = req.body.agentId;

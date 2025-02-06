@@ -41,7 +41,6 @@ export const randomWordPicker = (usedWords = [], requestedLevel: number) => {
     };
 };
 
-
 export const randomWordPickerAI = async () => {
 
     const client = new OpenAI({
