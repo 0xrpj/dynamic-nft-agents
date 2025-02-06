@@ -2,6 +2,7 @@ import {
   AgentRuntime,
   composeContext,
   Content,
+  DatabaseAdapter,
   elizaLogger,
   generateMessageResponse,
   generateText,
@@ -22,6 +23,7 @@ import { Tweet } from 'agent-twitter-client';
 import { DirectClient } from '@elizaos/client-direct';
 import charactersModel from '../models/character.model.js';
 import userModel from '../models/user.model.js';
+import { isItRelated, randomWordPicker } from '../utils/util.js';
 
 export class AgentController {
   public getAllAgents = async (req: Request, res: Response) => {
@@ -43,121 +45,222 @@ export class AgentController {
     }
   };
 
-  public createRoom =  async(req: Request, res: Response) => {
+  public gameInfo = async (req: Request, res: Response) => {
     try {
-      const userId = req.body.walletAddress
-      const agentId = req.body.nftId
-      
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+
+      const userInfo = await userModel.findOne({ userId, nftId });
+
+      if (!userInfo) {
+        throw new Error("Link doesn't exist!")
+      }
+
+      res.status(200).json({
+        success: true, userInfo: {
+          score: userInfo.score,
+          level: userInfo.level,
+          attemptsRemaining: userInfo.attemptsRemaining,
+          conversationHistory: userInfo.conversationHistory,
+          category: userInfo.category
+        }
+      });
+
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Error getting game info ' + error.toString() });
+    }
+  };
+
+  public createRoom = async (req: Request, res: Response) => {
+    try {
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+      const agentId = '2';
+
       let roomId: string;
 
-      const context = `
-      You have to give me only a word to guess and the category of the word in json format. Don't add anything except word and category. 
-      Example:
-      {
-      "word":"Elephant",
-      "category":"Animal",
-      }
-      `;
-      const agentRuntime: AgentRuntime = global.agentsInMemory.get(agentId);
-      const response = await generateText({
-          runtime: agentRuntime,
-          context: context,
-          modelClass: ModelClass.SMALL,
-          stop: ['\n'],
-          });       
-      let word = JSON.parse(response).word
-      let category = JSON.parse(response).category
       let userInfo = await userModel.findOne({ userId });
-      
+
       if (userInfo) {
         roomId = userInfo.roomId;
-
       } else {
         roomId = await global.db.createRoom();
-        userInfo = await userModel.create({userId, agentId, roomId, word, category });
+        const wordPicked = randomWordPicker([], 1);
+
+        const word = wordPicked.word.toLowerCase();
+        const category = wordPicked.category;
+
+        userInfo = await userModel.create({ userId, agentId, nftId, roomId, word, category });
       }
 
-      const agentCharacter = await charactersModel.findOne({agentId});
+      const agentCharacter = await charactersModel.findOne({ agentId }, { _id: 0, createdAt: 0, updatedAt: 0, __v: 0 });
 
-      if (!agentCharacter){
-        console.log("Agent doesnot exist")
-      }
-      else{
-        if ((agentCharacter as any).status === 'on') {
-          await startAgent(agentCharacter, global.directClient as DirectClient);
-        }
+      if (!agentCharacter) {
+        throw new Error('Agent doesnot exist');
       }
 
-      
-      res.status(200).json({ userInfo: userInfo, agentCharacter:agentCharacter, error: null });
+      res.status(200).json({ userInfo: userInfo, agent: { elizaId: agentCharacter.id, agentId: agentCharacter.agentId }, error: null });
     } catch (error) {
       res.status(200).json({ userInfo: {}, error: 'Error creating room ' + error.toString() });
     }
-  }
+  };
 
-  // public playWithUser = async(req: Request, res: Response) => {
-  //   const userId = req.body.walletAddress
-  //   - category of the word
-  //   - wallet_address
-  //   Working:
-  //   - Give AI the context of the game, category of the word and get initial question suggestion given the category of the word.
-  //   Response
-  //   - gameStatus
-  //   - yes/no question 
-  // }
+  public guessWord = async (req: Request, res: Response) => {
+    try {
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+      const guessedWord = req.body.guessedWord.toLowerCase();
 
-  // public greetUser = async (req: Request, res: Response) => {
-  //   try {
-  //     const agentId = "2"
-  //     const agentRuntime: AgentRuntime = global.agentsInMemory.get(agentId);
-  //     const context = "You are playing guess the word game as a companion. Generate an encouraging greeting message for the player"
-  //     const greetMessage = await generateText({
-  //       runtime: agentRuntime,
-  //       context,
-  //       modelClass: ModelClass.SMALL,
-  //     });
-  //     res.status(200).json({ greetings: greetMessage, error: null });
-  //   } catch (error) {
-  //     res.status(200).json({ agents: [], error: 'Error getting greetings' + error.toString() });
-  //   }
-  // };
+      const userInfo = await userModel.findOne({ userId, nftId });
 
-  // public playWithUser = async(req: Request, res: Response)=>{
-  //   try {
-  //     const agentId = "2"
-  //     const agentRuntime: AgentRuntime = global.agentsInMemory.get(agentId);
-  //     let memory: Memory = agentRuntime.composeState()
-  //     const content: Content
-  //     if (!memory) {
-  //       const roomId = stringToUuid("Game Room" + '-' + agentRuntime.agentId);
-  //       const memory = await agentRuntime.messageManager.createMemory({
-  //         id: stringToUuid(roomId + '-' + agentRuntime.agentId),
-  //         agentId: agentRuntime.agentId,
-  //         content: {
-  //           text: ,
-  //         },
-  //         roomId,
-  //         userId: agentRuntime.agentId,
-  //         embedding: getEmbeddingZeroVector(),
-  //       });
-  //     }
-  
-  //     let new_memory = await agentRuntime.messageManager.addEmbeddingToMemory(memory);
+      if (!userInfo) throw new Error("User doesn't exist.")
 
-  //     await agentRuntime.messageManager.createMemory(new_memory);
-  //     const recentMessages = 
-  //     const context = "You are playing guess the word game as a companion. You are given only the category of the word. Your goal is to help player guess the game. For first guesses provide a yes/no question to pinpoint the food given the {category}. If you have user previous guessses then suggest more narrowing questions to help user guess the word."
+      await userModel.findOneAndUpdate({ userId, nftId }, {
+        $push: {
+          latestGuesses: {
+            $each: [guessedWord],
+            $slice: -50
+          }
+        }
+      });
 
-  //     const greetMessage = await generateText({
-  //       runtime: agentRuntime,
-  //       context,
-  //       modelClass: ModelClass.SMALL,
-  //     });
-  //     res.status(200).json({ greetings: greetMessage, error: null });
-  //   } catch (error) {
-  //     res.status(200).json({ agents: [], error: 'Error getting greetings' + error.toString() });
-  //   }
-  // }
+      if (userInfo.word.toLowerCase() === guessedWord.toLowerCase()) {
+        await userModel.findOneAndUpdate({ userId, nftId }, { $inc: { score: 1 } });
+        const wordPicked = randomWordPicker(userInfo.latestGuesses, userInfo.level);
+        const word = wordPicked.word.toLowerCase();
+        const category = wordPicked.category;
+        await userModel.findOneAndUpdate({ userId, nftId }, { word, category });
+
+        if (userInfo.score % 3 === 0 && userInfo.score !== 0) {
+          await userModel.findOneAndUpdate(
+            { userId, nftId },
+            {
+              $inc: { level: 1 },
+              $set: { conversationHistory: [] },
+              attemptsRemaining: 3
+            },
+            { new: true }
+          );
+        }
+      } else {
+        const response = await userModel.findOneAndUpdate({ userId, nftId }, { $inc: { attemptsRemaining: -1 } }, { new: true });
+        if (response.attemptsRemaining <= 0) {
+          if (response.level > 1) {
+            await userModel.findOneAndUpdate(
+              { userId, nftId },
+              {
+                $inc: { level: -1 },
+                $set: { conversationHistory: [] },
+                attemptsRemaining: 3
+              },
+              { new: true }
+            );
+          }
+
+          const wordPicked = randomWordPicker(response.latestGuesses, response.level);
+          const word = wordPicked.word.toLowerCase();
+          const category = wordPicked.category;
+          await userModel.findOneAndUpdate({ userId, nftId }, { word, category, attemptsRemaining: 3 });
+
+          res.status(200).json({ success: true, message: 'All attempts depleted. Resetting word.' });
+          return;
+        } else {
+          res.status(200).json({ success: false, message: 'Incorrect word' });
+          return;
+        }
+      }
+      res.status(200).json({ success: true, message: 'Score updated' });
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Error processing the guessed word ' + error.toString() });
+    }
+  };
+
+  public reply = async (req: Request, res: Response) => {
+    try {
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+      const question = req.body.question;
+
+      const userInfo = await userModel.findOne({ userId, nftId });
+
+      if (userInfo) {
+        const word = userInfo.word;
+        const category = userInfo.category;
+        // add to conversation history
+        const response = await isItRelated(word, category, question);
+        await userModel.findOneAndUpdate({ userId, nftId }, {
+          $push: {
+            conversationHistory: {
+              question,
+              answer: response,
+            }
+          }
+        });
+        res.status(200).json({ success: true, message: response });
+        return;
+      }
+
+      res.status(500).json({ success: false, message: 'Couldnot answer!' });
+
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Error processing the guessed word ' + error.toString() });
+    }
+  };
+
+  public playWithUser = async (req: Request, res: Response) => {
+    try {
+      const userId = req.body.walletAddress;
+      const nftId = req.body.nftId;
+      const userQuestion = req.body.question || null;
+
+      const userInfo = await userModel.findOne({ userId, nftId });
+      const agentRuntime: AgentRuntime = global.agentsInMemory.get(userInfo.agentId);
+
+      const db: DatabaseAdapter = global.db;
+      const participants = await db.getParticipantsForRoom(userInfo.roomId as `${string}-${string}-${string}-${string}-${string}`)
+
+      if (participants.length === 0) {
+        await db.addParticipant(agentRuntime.agentId, userInfo.roomId as `${string}-${string}-${string}-${string}-${string}`);
+      }
+
+      const prompt = `You are an AI companion. You are given only the category of the word. Your goal is to help player guess the game. For first guesses provide a yes/no question to pinpoint the food given the ${userInfo.category}. If you have user previous guessses then suggest more narrowing questions to help user guess the word. You should not be too helpful. The higher the level of the user, the more helpful you should be. Currently, the level of user is ${userInfo.level}. The user has ${userInfo.attemptsRemaining} attempts remaining. The user has already guessed the following words: ${userInfo.latestGuesses.join(', ')}. The user has already answered the following questions: ${userInfo.conversationHistory.map((item: any) => `${item.question}: ${item.answer}`).join(', ')}. 
+
+      User might have asked some question. Here it is: ${userQuestion}.
+
+      As an AI companion your job is to: 
+      - Suggest questions to help user guess the word.
+      - Play with user as a friend. Don't focus on finding the word. Focus on making it fun for the user.
+      - Make fun of user in a light fun way (roast) if user is not answering questions correctly. But remember, you are his friend. You should not give any hurting remarks.
+
+      Don't talk like a real AI. Talk like a human. Short sentences. Maybe make spelling mistakes here and there and grammar does not need to be correct always. To human to to err, so follow that. Don't return any special characters like slash n.
+      `;
+
+      const text = await generateText({
+        runtime: agentRuntime,
+        context: prompt,
+        modelClass: ModelClass.SMALL,
+        stop: ['\n'],
+      });
+
+      let newMemory: Memory = {
+        userId: agentRuntime.agentId,
+        agentId: agentRuntime.agentId,
+        roomId: userInfo.roomId as `${string}-${string}-${string}-${string}-${string}`,
+        content: {
+          text: text,
+        } as Content,
+      };
+
+      const composedState = await agentRuntime.composeState(newMemory);
+      newMemory = await agentRuntime.messageManager.addEmbeddingToMemory(newMemory);
+      await agentRuntime.messageManager.createMemory(newMemory);
+
+      res.status(200).json({ success: true, message: text });
+
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Error helping the user ' + error.toString() });
+    }
+  };
 
   public toggleAgent = async (req: Request, res: Response) => {
     const agentId = req.body.agentId;
