@@ -233,7 +233,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                 </div>
                 <div className={`flex items-center gap-2 mb-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <Input
-                    value={input}
+                    value={suggestedQuestionInput}
                     isDarkMode={isDarkMode}
                     onChange={(e) => setSuggestedQuestionInput(e.target.value)}
                     placeholder="Type a message..."
