@@ -7,6 +7,8 @@ import { Card } from "../components/Card";
 import { Button } from '../components/Button';
 import { PageTitle } from "../components/PageTitle";
 import { useLogin } from "../context/UserContext";
+import axios from 'axios';
+
 
 interface NFTSelectionProps {
   onSelect: (nft: NFTCharacter) => void;
@@ -19,26 +21,32 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
   selectedNFT,
   isDarkMode,
 }) => {
+  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
   const navigate = useNavigate();
-  const { logOut } = useLogin();
+  const { logOut, userDetails } = useLogin();
 
     const handleNFTSelect = (nft: NFTCharacter) => {
       console.log('Selected nft:', nft.name);
       onSelect(nft);
     };
   
-    const handleStartGame = () => {
+    const handleStartGame = async() => {
       console.log({selectedNFT})
       if (selectedNFT) {
         console.log('Starting game with nft:', selectedNFT.name);
-        navigate(`/gameplay?id=${selectedNFT.id}`);
+        const response = await axios.post(`${VITE_API_BASE_URL}/createRoom`,{
+          "walletAddress": userDetails.address,
+          "nftId": selectedNFT.id
+        })
+        console.log({response})
+        navigate(`/gameplay`);
       }
     };
 
   return (
     <div className="p-20">
       <div className="flex justify-between items-center mb-8">
-        <PageTitle isDarkMode={isDarkMode}>Choose Your NFT Companion</PageTitle>
+        <PageTitle isDarkMode={isDarkMode}>Choose Your NFT Companion {userDetails.address}</PageTitle>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-5 m-16 mt-4 ml-0 gap-16">
         {nftCharacters.map((nft) => (

@@ -5,6 +5,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { useLogin } from "../context/UserContext";
+import axios from 'axios';
 
 interface GamePlayProps {
   nft: NFTCharacter;
@@ -16,9 +17,9 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [suggestedquestion, setSuggestedQuestion] =
     useState(`Howdy mate! Let's get this game done. I can see that the selected category is Food.`);
   const [guess, setGuess] = useState('');
-  const { logOut } = useLogin();
-  // const [messages, setMessages] = useState('');
+  const { logOut, userDetails } = useLogin();
   const [input, setInput] = useState("");
+  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   const sendMessage = () => {
     if (!input.trim()) return;
@@ -34,16 +35,6 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   return (
     <div className="p-12 mt-12 pt-0">
       <div className="flex justify-end items-center">
-        {/* <div
-          className={`flex justify-between items-center gap-2 px-4 py-2 rounded-lg mb-8
-                      ${isDarkMode
-              ? "bg-gray-800 text-white"
-              : "bg-indigo-100 gray-800"
-            }`}
-        >
-
-
-        </div> */}
       </div>
       <div className={`p-4 text-center flex justify-between rounded-lg mb-8 ${isDarkMode ? 'bg-gray-800' : 'bg-indigo-100'}`}>
         <h2 className={`text-2xl flex-col font-bold ${isDarkMode ? 'text-indigo-400' : 'text-indigo-800'}`}>
@@ -51,21 +42,21 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
         </h2>
         <div className='flex-col'>
           <div className='flex gap-4'>
-          <Trophy className="flex-col w-12 h-12" />
-          <div className='flex-col'>
-            <div className="flex text-l">
-              <h3 className='flex-col mr-2'> Level: </h3>
-              <div className='flex-col'>
-                {nft.level}
+            <Trophy className="flex-col w-12 h-12" />
+            <div className='flex-col'>
+              <div className="flex text-l">
+                <h3 className='flex-col mr-2'> Level: </h3>
+                <div className='flex-col'>
+                  {nft.level}
+                </div>
+              </div>
+              <div className="flex text-l">
+                <h3 className='flex-col mr-2'> Points: </h3>
+                <div className='flex-col'>
+                  {nft.points}
+                </div>
               </div>
             </div>
-            <div className="flex text-l">
-              <h3 className='flex-col mr-2'> Points: </h3>
-              <div className='flex-col'>
-                {nft.points}
-              </div>
-            </div>
-          </div>
           </div>
         </div>
       </div>
