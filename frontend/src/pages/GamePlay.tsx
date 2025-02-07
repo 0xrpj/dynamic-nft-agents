@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Send, Trophy } from 'lucide-react';
 import { NFTCharacter } from '../types';
 import { Card } from '../components/Card';
@@ -26,26 +26,55 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const { logOut, userDetails } = useLogin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState({ title: '', content: '' });
+  const [apiToggler, setApiToggler] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
-    const getUserData = async () => {
-      try {
-        const nftId = nft.id;
-        const walletAddress = userDetails.address;
-
-        const data = await axios.post(VITE_API_BASE_URL + "/gameInfo", {
-          "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
-          "nftId": nftId
-        })
-
-        setConversation(data.data.userInfo.conversationHistory)
-
-      } catch (e) {
-        alert((e as any).toString());
-      }
-    }
     getUserData();
-  }, []);
+  }, [apiToggler]);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [conversation]);
+
+
+  const getUserData = async () => {
+    try {
+      const walletAddress = userDetails.address;
+
+      const data = await axios.post(VITE_API_BASE_URL + "/gameInfo", {
+        "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
+        "nftId": nft.id
+      })
+
+      setConversation(data.data.userInfo.conversationHistory)
+
+    } catch (e) {
+      alert((e as any).toString());
+    }
+  };
+
+  const askQuestion = async (input: string) => {
+    if (!input.trim()) {
+      showMessage('Error', 'Please enter a message before sending.');
+      return;
+    }
+
+    const data = await axios.post(VITE_API_BASE_URL + "/reply", {
+      "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
+      "nftId": nft.id,
+      "question": input
+    });
+
+    if (data?.data?.success) {
+      await getUserData();
+      setApiToggler(!apiToggler);
+    }
+    setInput("");
+  };
 
   const showMessage = (title: string, content: string) => {
     setModalMessage({ title, content });
@@ -118,7 +147,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
               <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                 Let's start
               </h3>
-              <div className='flex flex-col h-[38vh] p-4 rounded-lg overflow-y-auto'>
+              <div className='flex flex-col h-[38vh] p-4 rounded-lg overflow-y-auto' >
                 {conversation.length === 0 ? (
                   <div className='flex justify-center items-center h-full'>
                     <p className='text-gray-400'>You have not asked any questions. You can ask YES/NO questions to the AI to pinpoint your answer.</p>
@@ -134,7 +163,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                     </div>
 
                     {/* Answer Bubble */}
-                    <div className='flex justify-start'>
+                    <div className='flex justify-start' ref={messagesEndRef}>
                       <div className='bg-gray-300 text-gray-800 p-3 rounded-lg max-w-[70%]'>
                         {message.answer}
                       </div>
@@ -150,9 +179,9 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type a message..."
                   className="flex-1"
-                  onKeyDown={async (e: any) => e.key === "Enter" && await sendMessage()}
+                  onKeyDown={async (e: any) => e.key === "Enter" && await askQuestion(input)}
                 />
-                <Button className='h-12' onClick={async () => { await sendMessage() }}>
+                <Button className='h-12' onClick={async () => { await askQuestion(input) }}>
                   <Send size={18} />
                 </Button>
               </div>
