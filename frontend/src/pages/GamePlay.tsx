@@ -16,8 +16,8 @@ interface GamePlayProps {
 export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [input, setInput] = useState("");
   const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  const [conversation, setConversation] = useState<{ question: string; answer: string; }[]>([]);
-  const [agentConversation, setAgentConversation] = useState<{ user: string; agent: string; }[]>([]);
+  const [gptConversation, setGptConversation] = useState<{ question: string; answer: string; }[]>([]);
+  const [agentConversation, setAgentConversation] = useState<{ question: string; answer: string; }[]>([]);
 
   const [question, setQuestion] = useState('');
   const [suggestedQuestionInput, setSuggestedQuestionInput] = useState('')
@@ -30,7 +30,6 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [apiToggler, setApiToggler] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-
   useEffect(() => {
     getUserData();
   }, [apiToggler]);
@@ -39,7 +38,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [conversation]);
+  }, [gptConversation]);
 
 
   const getUserData = async () => {
@@ -51,7 +50,8 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
         "nftId": nft.id
       })
 
-      setConversation(data.data.userInfo.gptConversationHistory)
+      setGptConversation(data.data.userInfo.gptConversationHistory)
+      setAgentConversation(data.data.userInfo.companionConversationHistory)
 
     } catch (e) {
       alert((e as any).toString());
@@ -77,44 +77,36 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
     setInput("");
   };
 
+  const talkToCompanion = async (input: string) => {
+    const data = await axios.post(VITE_API_BASE_URL + "/playWithUser", {
+      "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
+      "nftId": nft.id,
+      "question": input
+    });
+
+    if (data?.data?.success) {
+      await getUserData();
+      setApiToggler(!apiToggler);
+    }
+    setSuggestedQuestionInput("");
+  };
+
   const showMessage = (title: string, content: string) => {
     setModalMessage({ title, content });
     setIsModalOpen(true);
   };
 
-  const sendMessage = async () => {
-    if (!input.trim()) {
-      showMessage('Error', 'Please enter a message before sending.');
-      return;
-    }
-    console.log({ question });
-    setQuestion(input);
-    setInput("");
-  };
-
-  const handleAskHint = () => {
-    if (!suggestedQuestionInput.trim()) {
-      showMessage('Error', 'Please enter a message before sending.');
-      return;
-    }
-    console.log('Asked question:', suggestedQuestionInput);
-    setSuggestedQuestion(suggestedQuestionInput);
-    setSuggestedQuestionInput("")
-  }
-
-  const handleGuessSubmit = async(guessInput:string) => {
+  const handleGuessSubmit = async (guessInput: string) => {
     if (!guessInput.trim()) {
       showMessage('Error', 'Please enter a guess before submitting.');
       return;
     }
-    
-    console.log({guessInput})
     const data = await axios.post(VITE_API_BASE_URL + "/guessWord", {
       "walletAddress": userDetails.address,
       "nftId": nft.id,
       "guessedWord": guessInput
     });
-    console.log({data})
+    console.log({ data })
     if (data?.data?.success) {
       await getUserData();
       setApiToggler(!apiToggler);
@@ -122,10 +114,10 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
         "walletAddress": userDetails.address,
         "nftId": nft.id,
       });
-      console.log({response})
+      console.log({ response })
       showMessage(data?.data?.message, `You are at level ${response?.data?.userInfo?.level} and your score is ${response?.data?.userInfo?.score} `)
     }
-    else{
+    else {
       showMessage("Wrong guess", data?.data?.message)
     }
     setGuessInput("");
@@ -170,12 +162,12 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                 Let's start
               </h3>
               <div className='flex flex-col h-[45vh] p-4 rounded-lg overflow-y-auto'>
-                {conversation.length === 0 ? (
+                {gptConversation.length === 0 ? (
                   <div className='flex justify-center items-center h-full'>
                     <p className='text-gray-400'>You have not asked any questions. You can ask YES/NO questions to the AI to pinpoint your answer.</p>
                   </div>
                 ) : null}
-                {conversation.map((message, index) => (
+                {gptConversation.map((message, index) => (
                   <div key={index} className='flex flex-col space-y-2'>
                     {/* Question Bubble */}
                     <div className='flex justify-end'>
@@ -220,7 +212,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
               onChange={(e) => setGuessInput(e.target.value)}
               placeholder="Type your guess..."
               className="w-full mb-4"
-              onKeyDown={async(e: any) => e.key === "Enter" && handleGuessSubmit(guessInput)}
+              onKeyDown={async (e: any) => e.key === "Enter" && handleGuessSubmit(guessInput)}
             />
             <Button className="mb-4"
               onClick={() => {
@@ -261,16 +253,18 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                     {agentConversation.map((message, index) => (
                       <div key={index} className='flex flex-col space-y-2'>
                         {/* Question Bubble */}
-                        <div className='flex justify-end'>
-                          <div className='bg-blue-500 text-white p-3 rounded-lg max-w-[70%]'>
-                            {message.user}
+                        {message.question && (
+                          <div className='flex justify-end'>
+                            <div className='bg-blue-500 text-white p-3 rounded-lg max-w-[70%]'>
+                              {message.question}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Answer Bubble */}
                         <div className='flex justify-start'>
                           <div className='bg-gray-300 text-gray-800 p-3 rounded-lg max-w-[70%]'>
-                            {message.agent}
+                            {message.answer}
                           </div>
                         </div>
                       </div>
@@ -284,9 +278,9 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                     onChange={(e) => setSuggestedQuestionInput(e.target.value)}
                     placeholder="Type a message..."
                     className="flex-1"
-                    onKeyDown={(e: any) => e.key === "Enter" && handleAskHint()}
+                    onKeyDown={async (e: any) => e.key === "Enter" && await talkToCompanion(suggestedQuestionInput)}
                   />
-                  <Button className='h-12' onClick={handleAskHint}>
+                  <Button className='h-12' onClick={async () => { await talkToCompanion(suggestedQuestionInput) }}>
                     <Send size={18} />
                   </Button>
                 </div>
