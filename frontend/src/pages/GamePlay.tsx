@@ -17,6 +17,8 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [input, setInput] = useState("");
   const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const [conversation, setConversation] = useState<{ question: string; answer: string; }[]>([]);
+  const [agentConversation, setAgentConversation] = useState<{ user: string; agent: string; }[]>([]);
+
   const [question, setQuestion] = useState('');
   const [suggestedQuestionInput, setSuggestedQuestionInput] = useState('')
   const [suggestedquestion, setSuggestedQuestion] =
@@ -39,7 +41,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
         })
 
         setConversation(data.data.userInfo.conversationHistory)
-
+        setAgentConversation([{user:"Hy",agent:"Hello"}])
       } catch (e) {
         alert((e as any).toString());
       }
@@ -68,7 +70,8 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
       return;
     }
     console.log('Asked question:', suggestedQuestionInput);
-    setSuggestedQuestion(suggestedQuestionInput)
+    setSuggestedQuestion(suggestedQuestionInput);
+    setSuggestedQuestionInput("")
   }
 
   const handleGuessSubmit = () => {
@@ -114,11 +117,11 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
         {/* Chat Area */}
         <div className="lg:col-span-1">
           <Card isDarkMode={isDarkMode} >
-            <div className="p-8 h-[58vh]">
+            <div className="p-8 h-[65vh]">
               <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                 Let's start
               </h3>
-              <div className='flex flex-col h-[38vh] p-4 rounded-lg overflow-y-auto'>
+              <div className='flex flex-col h-[45vh] p-4 rounded-lg overflow-y-auto'>
                 {conversation.length === 0 ? (
                   <div className='flex justify-center items-center h-full'>
                     <p className='text-gray-400'>You have not asked any questions. You can ask YES/NO questions to the AI to pinpoint your answer.</p>
@@ -181,7 +184,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
           </div>
           {/* Assitance Area */}
           <Card isDarkMode={isDarkMode}>
-            <div className="p-6 h-[50vh]">
+            <div className="p-6 h-[58vh]">
               <div className="flex items-start gap-4 mb-6">
                 <img
                   src={nft.image}
@@ -198,13 +201,37 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                 </div>
               </div>
 
-              <div className="p-4 pl-0 rounded-lg mb-4">
-                <div className='h-[25vh]'>
+              <div className="rounded-lg">
+                <div className='h-[35vh]'>
+                <div className='flex flex-col h-[30vh] p-4 rounded-lg overflow-y-auto'>
+                {agentConversation.length === 0 ? (
+                  <div className='flex justify-center items-center h-full'>
+                    <p className='text-gray-400'>You have not asked any questions. You can ask YES/NO questions to the AI to pinpoint your answer.</p>
+                  </div>
+                ) : null}
+                {agentConversation.map((message, index) => (
+                  <div key={index} className='flex flex-col space-y-2'>
+                    {/* Question Bubble */}
+                    <div className='flex justify-end'>
+                      <div className='bg-blue-500 text-white p-3 rounded-lg max-w-[70%]'>
+                        {message.user}
+                      </div>
+                    </div>
+
+                    {/* Answer Bubble */}
+                    <div className='flex justify-start'>
+                      <div className='bg-gray-300 text-gray-800 p-3 rounded-lg max-w-[70%]'>
+                        {message.agent}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
                   {suggestedquestion}
                 </div>
                 <div className={`flex items-center gap-2 mb-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <Input
-                    value={input}
+                    value={suggestedQuestionInput}
                     isDarkMode={isDarkMode}
                     onChange={(e) => setSuggestedQuestionInput(e.target.value)}
                     placeholder="Type a message..."
