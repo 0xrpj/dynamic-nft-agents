@@ -128,7 +128,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
     else{
       showMessage("Wrong guess", data?.data?.message)
     }
-    setInput("");
+    setGuessInput("");
   };
 
   return (
