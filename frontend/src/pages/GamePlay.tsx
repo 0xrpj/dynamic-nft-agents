@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { Send, Trophy } from 'lucide-react';
 import { NFTCharacter } from '../types';
 import { Card } from '../components/Card';
@@ -19,9 +19,30 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [guess, setGuess] = useState('');
   const { logOut, userDetails } = useLogin();
   const [input, setInput] = useState("");
-  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const [conversation, setConversation] = useState<{ question: string; answer: string; }[]>([]);
 
-  const sendMessage = () => {
+  useEffect(() => {
+    const getUserData = async () => {
+      try {
+        const nftId = nft.id;
+        const walletAddress = userDetails.address;
+
+        const data = await axios.post(VITE_API_BASE_URL + "/gameInfo", {
+          "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
+          "nftId": nftId
+        })
+
+        setConversation(data.data.userInfo.conversationHistory)
+
+      } catch (e) {
+        alert((e as any).toString());
+      }
+    }
+    getUserData();
+  }, []);
+
+  const sendMessage = async () => {
     if (!input.trim()) return;
     console.log({ question })
     setQuestion(input);
@@ -62,17 +83,39 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
       </div>
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chat Area */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <Card isDarkMode={isDarkMode} >
             <div className="p-8 h-[58vh]">
               <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                 Let's start
               </h3>
-              <div className='flex h-[38vh]'>
-                {question}
+              <div className='flex flex-col h-[38vh] p-4 rounded-lg overflow-y-auto'>
+                {conversation.length === 0 ? (
+                  <div className='flex justify-center items-center h-full'>
+                    <p className='text-gray-400'>You have not asked any questions. You can ask YES/NO questions to the AI to pinpoint your answer.</p>
+                  </div>
+                ) : null}
+                {conversation.map((message, index) => (
+                  <div key={index} className='flex flex-col space-y-2'>
+                    {/* Question Bubble */}
+                    <div className='flex justify-end'>
+                      <div className='bg-blue-500 text-white p-3 rounded-lg max-w-[70%]'>
+                        {message.question}
+                      </div>
+                    </div>
+
+                    {/* Answer Bubble */}
+                    <div className='flex justify-start'>
+                      <div className='bg-gray-300 text-gray-800 p-3 rounded-lg max-w-[70%]'>
+                        {message.answer}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+
               <div className="flex items-center gap-2 my-4">
                 <Input
                   value={input}
@@ -80,9 +123,9 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type a message..."
                   className="flex-1"
-                  onKeyDown={(e: any) => e.key === "Enter" && sendMessage()}
+                  onKeyDown={async (e: any) => e.key === "Enter" && await sendMessage()}
                 />
-                <Button className='h-12' onClick={sendMessage}>
+                <Button className='h-12' onClick={async () => { await sendMessage() }}>
                   <Send size={18} />
                 </Button>
               </div>
