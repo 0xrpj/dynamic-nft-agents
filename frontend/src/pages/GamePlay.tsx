@@ -4,6 +4,7 @@ import { NFTCharacter } from '../types';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { Modal } from '../components/Modal';
 import { useLogin } from "../context/UserContext";
 import axios from 'axios';
 
@@ -13,14 +14,18 @@ interface GamePlayProps {
 }
 
 export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
-  const [question, setQuestion] = useState('');
-  const [suggestedquestion, setSuggestedQuestion] =
-    useState(`Howdy mate! Let's get this game done. I can see that the selected category is Food.`);
-  const [guess, setGuess] = useState('');
-  const { logOut, userDetails } = useLogin();
   const [input, setInput] = useState("");
   const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const [conversation, setConversation] = useState<{ question: string; answer: string; }[]>([]);
+  const [question, setQuestion] = useState('');
+  const [suggestedQuestionInput, setSuggestedQuestionInput] = useState('')
+  const [suggestedquestion, setSuggestedQuestion] =
+    useState("");
+  const [guess, setGuess] = useState("");
+  const [guessInput, setGuessInput] = useState("");
+  const { logOut, userDetails } = useLogin();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState({ title: '', content: '' });
 
   useEffect(() => {
     const getUserData = async () => {
@@ -42,17 +47,39 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
     getUserData();
   }, []);
 
+  const showMessage = (title: string, content: string) => {
+    setModalMessage({ title, content });
+    setIsModalOpen(true);
+  };
+
   const sendMessage = async () => {
-    if (!input.trim()) return;
-    console.log({ question })
+    if (!input.trim()) {
+      showMessage('Error', 'Please enter a message before sending.');
+      return;
+    }
+    console.log({ question });
     setQuestion(input);
     setInput("");
   };
 
   const handleAskHint = () => {
-    console.log('Asked question:', question);
-    setSuggestedQuestion("Is it found in my room?")
+    if (!suggestedQuestionInput.trim()) {
+      showMessage('Error', 'Please enter a message before sending.');
+      return;
+    }
+    console.log('Asked question:', suggestedQuestionInput);
+    setSuggestedQuestion(suggestedQuestionInput)
   }
+
+  const handleGuessSubmit = () => {
+    if (!guess.trim()) {
+      showMessage('Error', 'Please enter a guess before submitting.');
+      return;
+    }
+    setGuess(guessInput);
+    // setGuessInput("");
+  };
+
   return (
     <div className="p-12 mt-12 pt-0">
       <div className="flex justify-end items-center">
@@ -137,14 +164,15 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
           <div className="flex gap-4">
             <Input
               isDarkMode={isDarkMode}
-              value={guess}
-              onChange={(e) => setGuess(e.target.value)}
+              value={guessInput}
+              onChange={(e) => setGuessInput(e.target.value)}
               placeholder="Type your guess..."
               className="w-full mb-4"
+              onKeyDown={(e: any) => e.key === "Enter" && handleGuessSubmit()}
             />
             <Button className="mb-4"
               onClick={() => {
-                console.log('Submitted guess:', guess);
+                handleGuessSubmit
               }}
               variant="success"
             >
@@ -178,10 +206,10 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                   <Input
                     value={input}
                     isDarkMode={isDarkMode}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => setSuggestedQuestionInput(e.target.value)}
                     placeholder="Type a message..."
                     className="flex-1"
-                    onKeyDown={(e: any) => e.key === "Enter" && sendMessage()}
+                    onKeyDown={(e: any) => e.key === "Enter" && handleAskHint()}
                   />
                   <Button className='h-12' onClick={handleAskHint}>
                     <Send size={18} />
@@ -192,6 +220,17 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
           </Card>
         </div>
       </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={modalMessage.title}
+        isDarkMode={isDarkMode}
+      >
+        <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          {modalMessage.content}
+        </p>
+      </Modal>
+
       <button
         onClick={logOut}
         className={`absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 rounded ${isDarkMode
