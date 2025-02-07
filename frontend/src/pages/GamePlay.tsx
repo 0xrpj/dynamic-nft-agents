@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Send, Trophy } from 'lucide-react';
 import { NFTCharacter } from '../types';
 import { Card } from '../components/Card';
@@ -18,11 +18,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const [gptConversation, setGptConversation] = useState<{ question: string; answer: string; }[]>([]);
   const [agentConversation, setAgentConversation] = useState<{ question: string; answer: string; }[]>([]);
-
-  const [question, setQuestion] = useState('');
   const [suggestedQuestionInput, setSuggestedQuestionInput] = useState('')
-  const [suggestedquestion, setSuggestedQuestion] =
-    useState("");
   const [guessInput, setGuessInput] = useState("");
   const { logOut, userDetails } = useLogin();
   const [isModalOpen, setIsModalOpen] = useState(false);
