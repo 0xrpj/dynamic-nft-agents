@@ -65,7 +65,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
     }
 
     const data = await axios.post(VITE_API_BASE_URL + "/reply", {
-      "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
+      "walletAddress": userDetails.address,
       "nftId": nft.id,
       "question": input
     });
@@ -102,7 +102,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
       return;
     }
     const data = await axios.post(VITE_API_BASE_URL + "/guessWord", {
-      "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
+      "walletAddress": userDetails.address,
       "nftId": nft.id,
       "guessedWord": guessInput
     });
@@ -111,7 +111,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
       await getUserData();
       setApiToggler(!apiToggler);
       const response = await axios.post(VITE_API_BASE_URL + "/gameInfo", {
-        "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
+        "walletAddress": userDetails.address,
         "nftId": nft.id,
       });
       console.log({ response })
