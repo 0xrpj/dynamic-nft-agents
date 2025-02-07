@@ -193,6 +193,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                   </div>
                 ))}
               </div>
+              Hy
 
               <div className="flex items-center gap-2 my-4">
                 <Input
