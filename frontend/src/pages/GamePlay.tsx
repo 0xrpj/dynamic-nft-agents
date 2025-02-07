@@ -23,7 +23,6 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [suggestedQuestionInput, setSuggestedQuestionInput] = useState('')
   const [suggestedquestion, setSuggestedQuestion] =
     useState("");
-  const [guess, setGuess] = useState("");
   const [guessInput, setGuessInput] = useState("");
   const { logOut, userDetails } = useLogin();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -97,13 +96,31 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
     setIsModalOpen(true);
   };
 
-  const handleGuessSubmit = () => {
-    if (!guess.trim()) {
+  const handleGuessSubmit = async (guessInput: string) => {
+    if (!guessInput.trim()) {
       showMessage('Error', 'Please enter a guess before submitting.');
       return;
     }
-    setGuess(guessInput);
-    // setGuessInput("");
+    const data = await axios.post(VITE_API_BASE_URL + "/guessWord", {
+      "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
+      "nftId": nft.id,
+      "guessedWord": guessInput
+    });
+    console.log({ data })
+    if (data?.data?.success) {
+      await getUserData();
+      setApiToggler(!apiToggler);
+      const response = await axios.post(VITE_API_BASE_URL + "/gameInfo", {
+        "walletAddress": "0x42c6d17e78e5a8ad53be1c249e04e16d6870c655b5ff23412b150df2d5d4bcaf",
+        "nftId": nft.id,
+      });
+      console.log({ response })
+      showMessage(data?.data?.message, `You are at level ${response?.data?.userInfo?.level} and your score is ${response?.data?.userInfo?.score} `)
+    }
+    else {
+      showMessage("Wrong guess", data?.data?.message)
+    }
+    setGuessInput("");
   };
 
   return (
@@ -194,11 +211,11 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
               onChange={(e) => setGuessInput(e.target.value)}
               placeholder="Type your guess..."
               className="w-full mb-4"
-              onKeyDown={(e: any) => e.key === "Enter" && handleGuessSubmit()}
+              onKeyDown={async (e: any) => e.key === "Enter" && handleGuessSubmit(guessInput)}
             />
             <Button className="mb-4"
               onClick={() => {
-                handleGuessSubmit
+                handleGuessSubmit(guessInput)
               }}
               variant="success"
             >
