@@ -25,28 +25,28 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
   const navigate = useNavigate();
   const { logOut, userDetails } = useLogin();
 
-    const handleNFTSelect = (nft: NFTCharacter) => {
-      console.log('Selected nft:', nft.name);
-      onSelect(nft);
-    };
-  
-    const handleStartGame = async() => {
-      console.log({selectedNFT})
-      if (selectedNFT) {
-        console.log('Starting game with nft:', selectedNFT.name);
-        const response = await axios.post(`${VITE_API_BASE_URL}/createRoom`,{
-          "walletAddress": userDetails.address,
-          "nftId": selectedNFT.id
-        })
-        console.log({response})
-        navigate(`/gameplay`);
-      }
-    };
+  const handleNFTSelect = (nft: NFTCharacter) => {
+    console.log('Selected nft:', nft.name);
+    onSelect(nft);
+  };
+
+  const handleStartGame = async () => {
+    console.log({ selectedNFT })
+    if (selectedNFT) {
+      console.log('Starting game with nft:', selectedNFT.name);
+      const response = await axios.post(`${VITE_API_BASE_URL}/createRoom`, {
+        "walletAddress": userDetails.address,
+        "nftId": selectedNFT.id
+      })
+      console.log({ response })
+      navigate(`/gameplay`);
+    }
+  };
 
   return (
     <div className="p-20">
       <div className="flex justify-between items-center mb-8">
-        <PageTitle isDarkMode={isDarkMode}>Choose Your NFT Companion {userDetails.address}</PageTitle>
+        <PageTitle isDarkMode={isDarkMode}>Choose Your NFT Companion</PageTitle>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-5 m-16 mt-4 ml-0 gap-16">
         {nftCharacters.map((nft) => (
@@ -63,9 +63,8 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
             />
             <div className="p-4 mb-8">
               <h3
-                className={`text-2xl [font-size:1.2vw] font-semibold ${
-                  isDarkMode ? "text-white" : "text-gray-800"
-                }`}
+                className={`text-2xl [font-size:1.2vw] font-semibold ${isDarkMode ? "text-white" : "text-gray-800"
+                  }`}
               >
                 {nft.name}
               </h3>
@@ -90,11 +89,10 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
       )}
       <button
         onClick={logOut}
-        className={`absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 rounded ${
-          isDarkMode
-            ? "bg-red-600 text-white hover:bg-red-700"
-            : "bg-red-500 text-white hover:bg-red-600"
-        }`}
+        className={`absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 rounded ${isDarkMode
+          ? "bg-red-600 text-white hover:bg-red-700"
+          : "bg-red-500 text-white hover:bg-red-600"
+          }`}
       >
         Logout
       </button>

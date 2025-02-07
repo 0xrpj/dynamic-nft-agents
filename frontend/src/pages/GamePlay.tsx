@@ -29,6 +29,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [modalMessage, setModalMessage] = useState({ title: '', content: '' });
   const [apiToggler, setApiToggler] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [category, setCategory] = useState("");
 
   useEffect(() => {
     getUserData();
@@ -50,6 +51,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
 
       setGptConversation(data.data.userInfo.gptConversationHistory)
       setAgentConversation(data.data.userInfo.companionConversationHistory)
+      setCategory(data.data.userInfo.category)
 
     } catch (e) {
       alert((e as any).toString());
@@ -127,7 +129,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
       </div>
       <div className={`p-4 text-center flex justify-between rounded-lg mb-8 ${isDarkMode ? 'bg-gray-800' : 'bg-indigo-100'}`}>
         <h2 className={`text-2xl flex-col font-bold ${isDarkMode ? 'text-indigo-400' : 'text-indigo-800'}`}>
-          Category: "Food"
+          Your category for the word is: {category.toUpperCase()}.
         </h2>
         <div className='flex-col'>
           <div className='flex gap-4'>
@@ -183,7 +185,6 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                   </div>
                 ))}
               </div>
-              Hy
 
               <div className="flex items-center gap-2 my-4">
                 <Input
