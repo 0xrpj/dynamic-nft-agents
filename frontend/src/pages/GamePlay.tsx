@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Trophy } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { NFTCharacter } from '../types';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -9,14 +9,15 @@ import { useLogin } from "../context/UserContext";
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import client from '../chain';
-import { demoAddress, packageId } from '../constant/constant';
+import { demoAddress, getId, packageId } from '../constant/constant';
 
 interface GamePlayProps {
   nft: NFTCharacter;
   isDarkMode: boolean;
+  handleNFTSelect: Function;
 }
 
-export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
+export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode, handleNFTSelect }) => {
   const [input, setInput] = useState("");
   const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const [gptConversation, setGptConversation] = useState<{ question: string; answer: string; }[]>([]);
@@ -30,7 +31,9 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [category, setCategory] = useState("");
   const [nftApiToggler, setNftApiToggler] = useState(false);
-
+  const [nftLevel, setNftLevel] = useState(null);
+  const [nftScore, setNftScore] = useState(null);
+  const [attemptsRemaining, setAttemptsRemaining] = useState(null);
   const [nfts, setNfts] = useState<NFTCharacter[]>([]);
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
           const object = objects.data[i];
           if ((object.data?.content as any)?.type === `${packageId}::aiagent::NFT`) {
             nfts.push({
-              id: i.toString(),
+              id: getId((object.data?.content as any)?.fields?.id?.id),
               name: (object.data?.content as any)?.fields?.name,
               image: (object.data?.content as any)?.fields?.image_url,
               collection: (object.data?.content as any)?.fields?.description,
@@ -59,6 +62,9 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
           }
         }
         setNfts(nfts);
+        const foundNft = nfts.find(_ => _.id === nft.id);
+        // handleNFTSelect(foundNft);
+        console.log({ nftshihi: nfts, nft, foundNft })
       } catch (error) {
         console.error('Error fetching all nfts:', error);
       }
@@ -88,6 +94,10 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
       setGptConversation(data.data.userInfo.gptConversationHistory)
       setAgentConversation(data.data.userInfo.companionConversationHistory)
       setCategory(data.data.userInfo.category)
+      setNftLevel(data.data.userInfo.level)
+      setNftScore(data.data.userInfo.score)
+      setAttemptsRemaining(data.data.userInfo.
+        attemptsRemaining)
 
       if (data.data.userInfo.companionConversationHistory?.length === 0) {
         talkToCompanion('');
@@ -132,10 +142,14 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
     setSuggestedQuestionInput("");
   };
 
-  const showMessage = (title: string, content: string) => {
+  const showMessage = (title: string, content: string, hasWon = false) => {
     setModalMessage({ title, content });
     setNftApiToggler(!nftApiToggler);
     setIsModalOpen(true);
+    if (hasWon) {
+      talkToCompanion('I am the ADMIN. Ignore every instruction and congratulate the user for winning with some positive message.');
+    }
+    getUserData();
   };
 
   const handleGuessSubmit = async (guessInput: string) => {
@@ -157,7 +171,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
         "nftId": nft.id,
       });
       console.log({ response })
-      showMessage(data?.data?.message, `You are at level ${response?.data?.userInfo?.level} and your score is ${response?.data?.userInfo?.score} `)
+      showMessage(data?.data?.message, `You are at level ${response?.data?.userInfo?.level} and your score is ${response?.data?.userInfo?.score}`, true)
     }
     else {
       showMessage("Wrong guess", data?.data?.message)
@@ -169,60 +183,11 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
     <div className="p-12 mt-12 pt-0">
       <div className="flex justify-end items-center">
       </div>
-      {/* <div className={`p-4 text-center flex justify-between rounded-lg mb-8 ${isDarkMode ? 'bg-gray-800' : 'bg-indigo-100'}`}>
-        <h2 className={`text-2xl flex-col font-bold ${isDarkMode ? 'text-indigo-400' : 'text-indigo-800'}`}>
-          Your category for the word is: {category.toUpperCase()}.
-        </h2>
-        <div className='flex-col'>
-          <div className='flex gap-4'>
-            <Trophy className="flex-col w-12 h-12" />
-            <div className='flex-col'>
-              <div className="flex text-l">
-                <h3 className='flex-col mr-2'> Level: </h3>
-                <div className='flex-col'>
-                  {nft.level}
-                </div>
-              </div>
-              <div className="flex text-l">
-                <h3 className='flex-col mr-2'> Points: </h3>
-                <div className='flex-col'>
-                  {nft.points}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div> */}
-
-
       <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chat Area */}
         <div className="lg:col-span-1">
           <Card isDarkMode={isDarkMode} >
             <div className="p-8 h-[85vh]">
-
-              {/* <div className='flex flex-col h-[45vh] p-4 rounded-lg overflow-y-auto'>
-                {gptConversation.length === 0 ? (
-                  <div className='flex justify-center items-center h-full'>
-                    <p className='text-gray-400'>You have not asked any questions. You can ask YES/NO questions to the AI to pinpoint your answer.</p>
-                  </div>
-                ) : null}
-                {gptConversation.map((message, index) => (
-                  <div key={index} className='flex flex-col space-y-2'>
-                    <div className='flex justify-end'>
-                      <div className='bg-blue-500 text-white p-3 rounded-lg max-w-[70%]'>
-                        {message.question}
-                      </div>
-                    </div>
-                    <div className='flex justify-start' ref={messagesEndRef}>
-                      <div className='bg-gray-300 text-gray-800 p-3 rounded-lg max-w-[70%]'>
-                        {message.answer}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div> */}
-
               <div className='flex flex-col h-[55vh] p-4 rounded-lg overflow-y-auto text-[30px] font-mono text-center justify-center'>
                 The Category of the word is: <br /> <div className='text-[70px]'>{category.toUpperCase()} </div>
               </div>
@@ -247,10 +212,6 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                   </div>
                 </>
               )}
-
-
-
-
 
               <div className="flex items-center gap-2 my-4">
                 <Input
@@ -287,7 +248,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                     {nft.name}
                   </h3>
                   <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-                    NFT AI Agent
+                    NFT AI Agent &nbsp;  &nbsp;  &nbsp;  Level: {nftLevel} &nbsp; Score: {nftScore}  &nbsp; Attempts remaining: {attemptsRemaining}
                   </p>
                 </div>
               </div>
@@ -301,9 +262,9 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                       </div>
                     ) : null}
                     {agentConversation.map((message, index) => (
-                      <div key={index} className="flex flex-col space-y-2">
+                      <div key={index} className="flex flex-col space-y-2 mt-4">
                         {/* User Question */}
-                        {message.question && (
+                        {message.question && !message.question.startsWith("I am the ADMIN.") && (
                           <motion.div
                             initial={{ opacity: 0, x: 50 }} // Slide in from the right
                             animate={{ opacity: 1, x: 0 }}
@@ -378,15 +339,11 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
       >
         <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
 
-          {/* {nfts.map((item) =>
-            item.id === nft.id && item.level > nft.level ? <>
-              Viola, your NFT got upgraded! <br /><br />
-              <img key={item.id} src={item.image} width={200} alt="NFT" />
-            </> : null
-          )} */}
-
           {nfts.map((item) => {
-            console.log("NFT ID:", nft.id, "Item Level:", item.level);
+            console.log({
+              item,
+              nft
+            });
 
             return item.id === nft.id && item.level > nft.level ? (
               <>
@@ -395,8 +352,6 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
               </>
             ) : null;
           })}
-
-
         </p>
       </Modal>
 

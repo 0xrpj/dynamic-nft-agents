@@ -1,12 +1,10 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bot, HelpCircle, Play, Key, WholeWordIcon } from "lucide-react";
+import { Key } from "lucide-react";
 import { useLogin } from "../context/UserContext";
 import { motion } from "framer-motion";
-import { Button } from "../components/Button"; // shadcn/ui Button
+import { Button } from "../components/Button";
 import Slideshow from "../components/SlideShow";
-
-// import CompanionIllustration from "../assets/peep-39.png";
 
 interface WelcomeProps {
     isDarkMode: boolean;
@@ -40,7 +38,6 @@ export const Welcome: React.FC<WelcomeProps> = ({ isDarkMode }) => {
             className={`min-h-screen flex flex-col justify-center items-center p-8 ${isDarkMode ? "text-white" : "bg-gray-50 text-gray-900"
                 }`}
         >
-            {/* Header Section */}
             <motion.div
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -56,7 +53,6 @@ export const Welcome: React.FC<WelcomeProps> = ({ isDarkMode }) => {
                 </p>
             </motion.div>
 
-            {/* Companion AI Section */}
             <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -80,34 +76,12 @@ export const Welcome: React.FC<WelcomeProps> = ({ isDarkMode }) => {
                 </div>
             </motion.div>
 
-            {/* How It Works Section */}
             <motion.div
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.5 }}
                 className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl"
             >
-                {/* Yes/No Agent Card */}
-                {/* <div className="bg-gray-800/10 p-6 rounded-lg border border-gray-800/20 hover:shadow-lg transition-shadow">
-                    <div className="flex flex-col items-center mb-4">
-                        <h3 className="text-xl font-semibold">Yes/No Agent</h3>
-                    </div>
-                    <p className="text-gray-500 text-center">
-                        Ask yes/no questions to narrow down the word. The agent will respond
-                        with accurate answers to guide you.
-                    </p>
-                </div> */}
-
-                {/* Companion Agent Card */}
-                {/* <div className="bg-gray-800/10 p-6 rounded-lg border border-gray-800/20 hover:shadow-lg transition-shadow">
-                    <div className="flex flex-col items-center mb-4">
-                        <h3 className="text-xl font-semibold">Companion Agent</h3>
-                    </div>
-                    <p className="text-gray-500 text-center">
-                        Your companion AI will provide strategic hints and keep you engaged
-                        throughout the game.
-                    </p>
-                </div> */}
             </motion.div>
         </motion.div>
     );

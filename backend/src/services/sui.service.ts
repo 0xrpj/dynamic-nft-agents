@@ -9,7 +9,7 @@ const moduleName = "aiagent";
 
 const imageMapping = [
     {
-        "id": "0",
+        "id": "3",
         "name": "Queen 102",
         "collection": "Wondergame",
         "nftId": "0x235646bda6b466ee538ac0225d136d91ebbd3f323c906a91eda75140ff7077ae",
@@ -27,7 +27,7 @@ const imageMapping = [
         }
     },
     {
-        "id": "9",
+        "id": "1",
         "name": "GangstaBet #1",
         "old_image": "https://i.imgur.com/Npa0Q7A.gif",
         "new_image": "https://i.imgur.com/taZqP1Z.gif",
@@ -47,7 +47,7 @@ const imageMapping = [
         }
     },
     {
-        "id": "15",
+        "id": "2",
         "name": "Mirai Hunter",
         "collection": "Studio Mirai",
         "nftId": "0xf833d01c44010c2b616ee2d9ea5a97b4790fe932920ee54cea76b17f75bbf4ba",

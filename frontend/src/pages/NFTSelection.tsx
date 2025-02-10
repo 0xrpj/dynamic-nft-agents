@@ -2,14 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
 import { NFTCharacter } from "../types";
-// import { nftCharacters } from "../data/nfts";
 import { Card } from "../components/Card";
 import { Button } from '../components/Button';
 import { PageTitle } from "../components/PageTitle";
 import { useLogin } from "../context/UserContext";
 import axios from 'axios';
 import client from "../chain";
-import { demoAddress, packageId } from "../constant/constant";
+import { demoAddress, getId, packageId } from "../constant/constant";
 
 interface NFTSelectionProps {
   onSelect: (nft: NFTCharacter) => void;
@@ -45,7 +44,7 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
           if ((object.data?.content as any)?.type === `${packageId}::aiagent::NFT`) {
             console.log({ object })
             nfts.push({
-              id: i.toString(),
+              id: getId((object.data?.content as any)?.fields?.id?.id),
               name: (object.data?.content as any)?.fields?.name,
               image: (object.data?.content as any)?.fields?.image_url,
               collection: (object.data?.content as any)?.fields?.description,
@@ -75,11 +74,10 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
     console.log({ selectedNFT });
     if (selectedNFT) {
       console.log('Starting game with nft:', selectedNFT.name);
-      const response = await axios.post(`${VITE_API_BASE_URL}/createRoom`, {
+      await axios.post(`${VITE_API_BASE_URL}/createRoom`, {
         "walletAddress": userDetails.address,
         "nftId": selectedNFT.id
       });
-      console.log({ response });
       navigate(`/gameplay`);
     }
   };
@@ -87,7 +85,7 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
   return (
     <div className="p-4 sm:p-8 md:p-12 lg:p-20">
       <div className="flex justify-between items-center mb-2">
-        <PageTitle isDarkMode={isDarkMode}>Pick an your <span className="bg-[#800000]">Game Companion NFT Agent</span></PageTitle>
+        <PageTitle isDarkMode={isDarkMode}>Pick your <span className="bg-[#800000]">Game Companion NFT Agent</span></PageTitle>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-1 sm:gap-2 md:gap-3 lg:gap-6">

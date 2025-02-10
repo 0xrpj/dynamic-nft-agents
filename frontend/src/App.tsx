@@ -61,6 +61,7 @@ function App() {
                 gameState.selectedNFT? (
                   <GamePlay
                     nft={gameState.selectedNFT}
+                    handleNFTSelect={handleNFTSelect}
                     isDarkMode={gameState.isDarkMode}
                   />
                 ) : (
