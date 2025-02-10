@@ -16,6 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 global.__dirname = path.dirname(__filename);
 global.agentsInMemory = new Map<string, AgentRuntime>();
 global.directClient = new DirectClient();
+global.db = null;
 
 let nodePlugin: any | undefined;
 
@@ -61,13 +62,13 @@ export const startAgent = async (character: Character, directClient: DirectClien
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
+    
+    global.db = initializeDatabase(dataDir);
 
-    const db = initializeDatabase(dataDir);
+    await global.db.init();
 
-    await db.init();
-
-    const cache = initializeDbCache(character, db);
-    createOrReturnExistingAgent(character, db, cache, token);
+    const cache = initializeDbCache(character, global.db);
+    createOrReturnExistingAgent(character, global.db, cache, token);
 
     const agentId = (character as any).agentId;
     const runtime: AgentRuntime = global.agentsInMemory.get(agentId);
