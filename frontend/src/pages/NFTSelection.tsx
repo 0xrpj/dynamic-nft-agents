@@ -9,6 +9,7 @@ import { PageTitle } from "../components/PageTitle";
 import { useLogin } from "../context/UserContext";
 import axios from 'axios';
 import client from "../chain";
+import { demoAddress, packageId } from "../constant/constant";
 
 interface NFTSelectionProps {
   onSelect: (nft: NFTCharacter) => void;
@@ -24,8 +25,6 @@ export const NFTSelection: React.FC<NFTSelectionProps> = ({
   const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
   const { userDetails } = useLogin();
-  const packageId = "0x092139eeaf32b068f71eca837e24a600e01fecd823f0fc997e19f0979d526bf7";
-  const demoAddress = "0x3d2e7fbc0bccd8ab4b5e3375cc28cf22a343ed4e96e96f45450c4e019a9fe445"; // Fetching NFTs of this user for testing purposes. Will be replace by userDetails.address in production
 
   const [nfts, setNfts] = useState<NFTCharacter[]>([]);
 

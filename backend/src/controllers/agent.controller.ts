@@ -24,7 +24,7 @@ import { DirectClient } from '@elizaos/client-direct';
 import charactersModel from '../models/character.model.js';
 import userModel from '../models/user.model.js';
 import { isItRelated, randomWordPicker } from '../utils/util.js';
-import { upgradeDynamicNft, upgradeDynamicNftOld } from '../services/sui.service.js';
+import { upgradeDynamicNft } from '../services/sui.service.js';
 
 export class AgentController {
   public getAllAgents = async (req: Request, res: Response) => {
@@ -112,8 +112,6 @@ export class AgentController {
       const userId = req.body.walletAddress;
       const nftId = req.body.nftId;
       const guessedWord = req.body.guessedWord.toLowerCase();
-      const hash = await upgradeDynamicNftOld(nftId, 1);
-      console.log({hash})
 
       const userInfo = await userModel.findOne({ userId, nftId });
 
