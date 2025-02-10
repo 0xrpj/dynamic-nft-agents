@@ -77,7 +77,7 @@ export class AgentController {
     try {
       const userId = req.body.walletAddress;
       const nftId = req.body.nftId;
-      const agentId = '2';
+      const agentId = nftId;
 
       let roomId: string;
 
@@ -188,6 +188,7 @@ export class AgentController {
     try {
       const userId = req.body.walletAddress;
       const nftId = req.body.nftId;
+      
       const question = req.body.question;
 
       const userInfo = await userModel.findOne({ userId, nftId });
@@ -235,8 +236,8 @@ export class AgentController {
       const prompt = `You are an AI companion. 
       You are given only the category of the word. 
       Your goal is to help player guess the word. 
-      For first guesses provide a yes/no question to pinpoint the word given the ${userInfo.category}. 
-      If a user ask some random questions to you, just answer the question.
+      Initially provide one yes/no question to pinpoint the word given the ${userInfo.category}. 
+      If a user ask some questions to you, just answer the question.
       If you have user previous guessses then suggest more narrowing questions to help user guess the word. You should not be too helpful. The higher the level of the user, the more helpful you should be. Currently, the level of user is ${userInfo.level}. The user has ${userInfo.attemptsRemaining} attempts remaining. The user has already guessed the following words: ${userInfo.latestGuesses.join(', ')}. The user has already answered the following questions: ${userInfo.gptConversationHistory.map((item: any) => `${item.question}: ${item.answer}`).join(', ')}. 
 
       User might have asked some question. Here it is: ${userQuestion}.
@@ -246,7 +247,8 @@ export class AgentController {
       - Address user's question.
       - Play with user as a friend. Don't focus on finding the word. Focus on making it fun for the user.
 
-      Don't talk like a real AI. Talk like a human. Use short sentences. Maybe make spelling mistakes here and there and grammar does not need to be correct always. To human to to err, so follow that. Don't return any special characters like slash n.
+      Don't talk like a real AI. Talk like a human. Use short sentences.
+      To human to to err, so follow that. Don't return any special characters like slash n.
       `;
 
       const text = await generateText({
