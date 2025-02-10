@@ -186,7 +186,6 @@ export class AgentController {
     try {
       const userId = req.body.walletAddress;
       const nftId = req.body.nftId;
-      
       const question = req.body.question;
 
       const userInfo = await userModel.findOne({ userId, nftId });

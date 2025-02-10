@@ -47,7 +47,7 @@ const imageMapping = [
         }
     },
     {
-        "id": "14",
+        "id": "15",
         "name": "Mirai Hunter",
         "collection": "Studio Mirai",
         "nftId": "0xf833d01c44010c2b616ee2d9ea5a97b4790fe932920ee54cea76b17f75bbf4ba",

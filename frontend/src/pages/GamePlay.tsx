@@ -377,12 +377,25 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
         isDarkMode={isDarkMode}
       >
         <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          {nfts.map((item) =>
+
+          {/* {nfts.map((item) =>
             item.id === nft.id && item.level > nft.level ? <>
               Viola, your NFT got upgraded! <br /><br />
               <img key={item.id} src={item.image} width={200} alt="NFT" />
             </> : null
-          )}
+          )} */}
+
+          {nfts.map((item) => {
+            console.log("NFT ID:", nft.id, "Item Level:", item.level);
+
+            return item.id === nft.id && item.level > nft.level ? (
+              <>
+                Viola, your NFT got upgraded! <br /><br />
+                <img key={item.id} src={item.image} width={200} alt="NFT" />
+              </>
+            ) : null;
+          })}
+
 
         </p>
       </Modal>
