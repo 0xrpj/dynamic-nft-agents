@@ -8,6 +8,8 @@ import { Modal } from '../components/Modal';
 import { useLogin } from "../context/UserContext";
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import client from '../chain';
+import { demoAddress, packageId } from '../constant/constant';
 
 interface GamePlayProps {
   nft: NFTCharacter;
@@ -27,6 +29,43 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [apiToggler, setApiToggler] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [category, setCategory] = useState("");
+  const [nftApiToggler, setNftApiToggler] = useState(false);
+
+  const [nfts, setNfts] = useState<NFTCharacter[]>([]);
+
+  useEffect(() => {
+    async function fetchAllNfts() {
+      try {
+        const nfts = [];
+
+        const objects = await client.getOwnedObjects({
+          owner: demoAddress,
+          options: {
+            showContent: true,
+          },
+        });
+
+        for (let i = 0; i < objects.data.length; i++) {
+          const object = objects.data[i];
+          if ((object.data?.content as any)?.type === `${packageId}::aiagent::NFT`) {
+            nfts.push({
+              id: i.toString(),
+              name: (object.data?.content as any)?.fields?.name,
+              image: (object.data?.content as any)?.fields?.image_url,
+              collection: (object.data?.content as any)?.fields?.description,
+              level: (object.data?.content as any)?.fields?.ai_level,
+              points: (object.data?.content as any)?.fields?.win_rate
+            })
+          }
+        }
+        setNfts(nfts);
+      } catch (error) {
+        console.error('Error fetching all nfts:', error);
+      }
+    }
+
+    fetchAllNfts();
+  }, [nftApiToggler]);
 
   useEffect(() => {
     getUserData();
@@ -95,6 +134,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
 
   const showMessage = (title: string, content: string) => {
     setModalMessage({ title, content });
+    setNftApiToggler(!nftApiToggler);
     setIsModalOpen(true);
   };
 
@@ -337,7 +377,13 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
         isDarkMode={isDarkMode}
       >
         <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          {modalMessage.content}
+          {nfts.map((item) =>
+            item.id === nft.id && item.level > nft.level ? <>
+              Viola, your NFT got upgraded! <br /><br />
+              <img key={item.id} src={item.image} width={200} alt="NFT" />
+            </> : null
+          )}
+
         </p>
       </Modal>
 
