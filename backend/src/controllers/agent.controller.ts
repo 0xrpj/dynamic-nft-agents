@@ -189,20 +189,51 @@ export class AgentController {
       const question = req.body.question;
 
       const userInfo = await userModel.findOne({ userId, nftId });
+      const agentRuntime: AgentRuntime = global.agentsInMemory.get("0");
+
+    //   const prompt = `
+    //     You are playing a game where user has to guess a word that has been previosuly provided based on the category provided to him. 
+    //     The word this round is ${word} and the category is ${category}. 
+    //     User has the ability to ask yes/no questions to pinpoint the word. 
+    //     This is the question asked by the user ${question}. 
+    //     Provide a one-word yes/no/abstrain response based on if you think the word is related to the question or not.
+    // `;
+
+    //   const text = await generateText({
+    //     runtime: agentRuntime,
+    //     context: prompt,
+    //     modelClass: ModelClass.SMALL,
+    //     stop: ['\n'],
+    //   });
 
       if (userInfo) {
         const word = userInfo.word;
         const category = userInfo.category;
-        // add to conversation history
-        const response = await isItRelated(word, category, question);
-        await userModel.findOneAndUpdate({ userId, nftId }, {
-          $push: {
-            gptConversationHistory: {
-              question,
-              answer: response,
-            }
-          }
+        
+        const prompt = `
+        You are playing a game where user has to guess a word that has been previosuly provided based on the category provided to him. 
+        The word this round is ${word} and the category is ${category}. 
+        User has the ability to ask yes/no questions to pinpoint the word. 
+        This is the question asked by the user ${question}. 
+        Provide a one-word yes/no/abstrain response based on if you think the word is related to the question or not.
+        `;
+
+        const response = await generateText({
+        runtime: agentRuntime,
+        context: prompt,
+        modelClass: ModelClass.SMALL,
+        stop: ['\n'],
         });
+
+        // const response = await isItRelated(word, category, question);
+        // await userModel.findOneAndUpdate({ userId, nftId }, {
+        //   $push: {
+        //     gptConversationHistory: {
+        //       question,
+        //       answer: response,
+        //     }
+        //   }
+        // });
         res.status(200).json({ success: true, message: response });
         return;
       }
