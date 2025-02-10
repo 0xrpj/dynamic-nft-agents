@@ -24,6 +24,7 @@ import { DirectClient } from '@elizaos/client-direct';
 import charactersModel from '../models/character.model.js';
 import userModel from '../models/user.model.js';
 import { isItRelated, randomWordPicker } from '../utils/util.js';
+import { upgradeDynamicNft, upgradeDynamicNftOld } from '../services/sui.service.js';
 
 export class AgentController {
   public getAllAgents = async (req: Request, res: Response) => {
@@ -61,7 +62,8 @@ export class AgentController {
           score: userInfo.score,
           level: userInfo.level,
           attemptsRemaining: userInfo.attemptsRemaining,
-          conversationHistory: userInfo.conversationHistory,
+          gptConversationHistory: userInfo.gptConversationHistory,
+          companionConversationHistory: userInfo.companionConversationHistory,
           category: userInfo.category
         }
       });
@@ -79,7 +81,7 @@ export class AgentController {
 
       let roomId: string;
 
-      let userInfo = await userModel.findOne({ userId });
+      let userInfo = await userModel.findOne({ userId, nftId });
 
       if (userInfo) {
         roomId = userInfo.roomId;
@@ -110,6 +112,8 @@ export class AgentController {
       const userId = req.body.walletAddress;
       const nftId = req.body.nftId;
       const guessedWord = req.body.guessedWord.toLowerCase();
+      const hash = await upgradeDynamicNftOld(nftId, 1);
+      console.log({hash})
 
       const userInfo = await userModel.findOne({ userId, nftId });
 
@@ -132,11 +136,13 @@ export class AgentController {
         await userModel.findOneAndUpdate({ userId, nftId }, { word, category });
 
         if (userInfo.score % 3 === 0 && userInfo.score !== 0) {
+          const hash = await upgradeDynamicNft(nftId, userInfo.level+1);
+          console.log({hash});
           await userModel.findOneAndUpdate(
             { userId, nftId },
             {
               $inc: { level: 1 },
-              $set: { conversationHistory: [] },
+              $set: { gptConversationHistory: [] },
               attemptsRemaining: 3
             },
             { new: true }
@@ -150,7 +156,7 @@ export class AgentController {
               { userId, nftId },
               {
                 $inc: { level: -1 },
-                $set: { conversationHistory: [] },
+                $set: { gptConversationHistory: [] },
                 attemptsRemaining: 3
               },
               { new: true }
@@ -190,7 +196,7 @@ export class AgentController {
         const response = await isItRelated(word, category, question);
         await userModel.findOneAndUpdate({ userId, nftId }, {
           $push: {
-            conversationHistory: {
+            gptConversationHistory: {
               question,
               answer: response,
             }
@@ -223,7 +229,7 @@ export class AgentController {
         await db.addParticipant(agentRuntime.agentId, userInfo.roomId as `${string}-${string}-${string}-${string}-${string}`);
       }
 
-      const prompt = `You are an AI companion. You are given only the category of the word. Your goal is to help player guess the game. For first guesses provide a yes/no question to pinpoint the food given the ${userInfo.category}. If you have user previous guessses then suggest more narrowing questions to help user guess the word. You should not be too helpful. The higher the level of the user, the more helpful you should be. Currently, the level of user is ${userInfo.level}. The user has ${userInfo.attemptsRemaining} attempts remaining. The user has already guessed the following words: ${userInfo.latestGuesses.join(', ')}. The user has already answered the following questions: ${userInfo.conversationHistory.map((item: any) => `${item.question}: ${item.answer}`).join(', ')}. 
+      const prompt = `You are an AI companion. You are given only the category of the word. Your goal is to help player guess the game. For first guesses provide a yes/no question to pinpoint the food given the ${userInfo.category}. If you have user previous guessses then suggest more narrowing questions to help user guess the word. You should not be too helpful. The higher the level of the user, the more helpful you should be. Currently, the level of user is ${userInfo.level}. The user has ${userInfo.attemptsRemaining} attempts remaining. The user has already guessed the following words: ${userInfo.latestGuesses.join(', ')}. The user has already answered the following questions: ${userInfo.gptConversationHistory.map((item: any) => `${item.question}: ${item.answer}`).join(', ')}. 
 
       User might have asked some question. Here it is: ${userQuestion}.
 
@@ -254,6 +260,15 @@ export class AgentController {
       const composedState = await agentRuntime.composeState(newMemory);
       newMemory = await agentRuntime.messageManager.addEmbeddingToMemory(newMemory);
       await agentRuntime.messageManager.createMemory(newMemory);
+
+      await userModel.findOneAndUpdate({ userId, nftId }, {
+        $push: {
+          companionConversationHistory: {
+            question: userQuestion,
+            answer: text,
+          }
+        }
+      });
 
       res.status(200).json({ success: true, message: text });
 

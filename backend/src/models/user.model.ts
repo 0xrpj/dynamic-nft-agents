@@ -15,7 +15,8 @@ export interface User {
   level: number;
   attemptsRemaining: number;
   latestGuesses: string[];
-  conversationHistory: ConversationHistory[];
+  gptConversationHistory: ConversationHistory[];
+  companionConversationHistory: ConversationHistory[];
 }
 
 const conversationHistorySchema = new Schema<ConversationHistory>(
@@ -71,7 +72,11 @@ const userSchema: Schema<User> = new Schema(
       type: [String],
       default: [],
     },   
-    conversationHistory: {
+    gptConversationHistory: {
+      type: [conversationHistorySchema],
+      default: [],
+    },
+    companionConversationHistory: {
       type: [conversationHistorySchema],
       default: [],
     },
