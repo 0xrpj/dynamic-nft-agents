@@ -1,0 +1,68 @@
+{
+    "compileOnSave": false,
+    "ts-node": {
+      "diagnostics": true
+    },
+    "compilerOptions": {
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "allowJs": true,
+      "resolveJsonModule": true,
+      "outDir": "dist",
+      "sourceMap": true,
+      "lib": ["ESNext","DOM"],
+
+      /* old */
+      /*
+      "target": "ES2022",
+      "module": "Node16",
+      "moduleResolution": "Node16",
+      */
+
+      "target": "ESNext",
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+
+
+      /* Project specific */
+      "moduleDetection": "force",
+      "rootDir": "src",
+      "strict": false,
+      "allowImportingTsExtensions": false,
+      "emitDeclarationOnly": false,
+      "noImplicitAny": false,
+      "checkJs": false,
+      "noEmitOnError": false,
+      "allowArbitraryExtensions": true,
+
+      /* misc */
+      "typeRoots": ["node_modules/@types"],
+      "allowSyntheticDefaultImports": true,
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "forceConsistentCasingInFileNames": true,
+      "noFallthroughCasesInSwitch": true,
+      "noImplicitReturns": true,
+      "noEmit": false,
+      "pretty": true,
+      "declaration": true,
+      "importHelpers": true,
+      "alwaysStrict": false,
+      "baseUrl": "src",
+      "paths": {
+          "@config": ["config"],
+          "@controllers/*": ["controllers/*"],
+          "@databases": ["databases/*"],
+          "@dtos/*": ["dtos/*"],
+          "@middlewares/*": ["middlewares/*"],
+          "@models/*": ["models/*"],
+          "@routes/*": ["routes/*"],
+          "@services/*": ["services/*"],
+          "@utils/*": ["utils/*"],
+          "@data/*": ["data/*"],
+          "@constant/*": ["constant/*"],
+        }
+    },
+    "include": ["src/**/*.ts", "src/**/*.json", ".env", "src/app.ts", "src/server.ts", "archieve/routes/auth.route.ts"],
+    "exclude": ["node_modules", "src/http", "src/logs"],
+  }
