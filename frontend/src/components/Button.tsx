@@ -4,7 +4,7 @@ import { DivideIcon as LucideIcon } from 'lucide-react';
 interface ButtonProps {
   onClick: () => void;
   variant?: 'primary' | 'success';
-  icon?: LucideIcon;
+  icon?: any;
   children: React.ReactNode;
   className?: string;
 }
@@ -16,9 +16,9 @@ export const Button: React.FC<ButtonProps> = ({
   children,
   className = ''
 }) => {
-  const baseStyles = 'text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2';
+  const baseStyles = 'text-white px-6 py-2 transition-colors duration-200 flex items-center gap-2 rounded-[18px]';
   const variantStyles = {
-    primary: 'bg-indigo-600 hover:bg-indigo-700',
+    primary: 'bg-sky-700 hover:bg-sky-800',
     success: 'bg-green-600 hover:bg-green-700'
   };
 

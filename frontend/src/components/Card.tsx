@@ -12,7 +12,7 @@ export const Card: React.FC<CardProps> = ({ isDarkMode, onClick, selectedNFTId, 
     <div
       onClick={onClick}
       className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} 
-                rounded-xl shadow-lg overflow-hidden
+                bg-opacity-50 rounded-xl shadow-lg overflow-hidden
                 ${onClick ? 'cursor-pointer transform hover:scale-105 transition-transform duration-200' : ''}
                 ${selectedNFTId ? 'ring-2 ring-indigo-600' : ''}`}
     >

@@ -59,7 +59,7 @@ export const CategorySelection: React.FC<CategorySelectionProps> = ({
           </Card>
         ))}
       </div>
-      
+
       {selectedCategory && (
         <Button
           onClick={handleStartGame}
@@ -69,16 +69,7 @@ export const CategorySelection: React.FC<CategorySelectionProps> = ({
           Start Game
         </Button>
       )}
-      <button
-        onClick={logOut}
-        className={`absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 rounded ${
-          isDarkMode
-            ? "bg-red-600 text-white hover:bg-red-700"
-            : "bg-red-500 text-white hover:bg-red-600"
-        }`}
-      >
-        Logout
-      </button>
+
     </div>
 
   );

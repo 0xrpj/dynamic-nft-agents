@@ -7,6 +7,7 @@ import { Input } from '../components/Input';
 import { Modal } from '../components/Modal';
 import { useLogin } from "../context/UserContext";
 import axios from 'axios';
+import { motion } from 'framer-motion';
 
 interface GamePlayProps {
   nft: NFTCharacter;
@@ -20,7 +21,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
   const [agentConversation, setAgentConversation] = useState<{ question: string; answer: string; }[]>([]);
   const [suggestedQuestionInput, setSuggestedQuestionInput] = useState('')
   const [guessInput, setGuessInput] = useState("");
-  const { logOut, userDetails } = useLogin();
+  const { userDetails } = useLogin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState({ title: '', content: '' });
   const [apiToggler, setApiToggler] = useState(false);
@@ -49,6 +50,10 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
       setAgentConversation(data.data.userInfo.companionConversationHistory)
       setCategory(data.data.userInfo.category)
 
+      if (data.data.userInfo.companionConversationHistory?.length === 0) {
+        talkToCompanion('');
+      }
+
     } catch (e) {
       alert((e as any).toString());
     }
@@ -71,6 +76,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
       setApiToggler(!apiToggler);
     }
     setInput("");
+    talkToCompanion('');
   };
 
   const talkToCompanion = async (input: string) => {
@@ -123,7 +129,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
     <div className="p-12 mt-12 pt-0">
       <div className="flex justify-end items-center">
       </div>
-      <div className={`p-4 text-center flex justify-between rounded-lg mb-8 ${isDarkMode ? 'bg-gray-800' : 'bg-indigo-100'}`}>
+      {/* <div className={`p-4 text-center flex justify-between rounded-lg mb-8 ${isDarkMode ? 'bg-gray-800' : 'bg-indigo-100'}`}>
         <h2 className={`text-2xl flex-col font-bold ${isDarkMode ? 'text-indigo-400' : 'text-indigo-800'}`}>
           Your category for the word is: {category.toUpperCase()}.
         </h2>
@@ -146,18 +152,16 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chat Area */}
         <div className="lg:col-span-1">
           <Card isDarkMode={isDarkMode} >
-            <div className="p-8 h-[65vh]">
-              <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                Let's start
-              </h3>
-              <div className='flex flex-col h-[45vh] p-4 rounded-lg overflow-y-auto'>
+            <div className="p-8 h-[85vh]">
+
+              {/* <div className='flex flex-col h-[45vh] p-4 rounded-lg overflow-y-auto'>
                 {gptConversation.length === 0 ? (
                   <div className='flex justify-center items-center h-full'>
                     <p className='text-gray-400'>You have not asked any questions. You can ask YES/NO questions to the AI to pinpoint your answer.</p>
@@ -165,14 +169,11 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                 ) : null}
                 {gptConversation.map((message, index) => (
                   <div key={index} className='flex flex-col space-y-2'>
-                    {/* Question Bubble */}
                     <div className='flex justify-end'>
                       <div className='bg-blue-500 text-white p-3 rounded-lg max-w-[70%]'>
                         {message.question}
                       </div>
                     </div>
-
-                    {/* Answer Bubble */}
                     <div className='flex justify-start' ref={messagesEndRef}>
                       <div className='bg-gray-300 text-gray-800 p-3 rounded-lg max-w-[70%]'>
                         {message.answer}
@@ -180,47 +181,61 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                     </div>
                   </div>
                 ))}
+              </div> */}
+
+              <div className='flex flex-col h-[55vh] p-4 rounded-lg overflow-y-auto text-[30px] font-mono text-center justify-center'>
+                The Category of the word is: <br /> <div className='text-[70px]'>{category.toUpperCase()} </div>
               </div>
+
+              {gptConversation.some(data => data.answer.toLowerCase().includes("yes")) && (
+                <>
+                  You are on the right path with these questions
+                  <div className="mt-2 overflow-x-auto whitespace-nowrap flex gap-2 p-2">
+                    {gptConversation
+                      .filter(data => data.answer.toLowerCase().includes("yes"))
+                      .map((data, index) => (
+                        <div
+                          key={index}
+                          className="bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-full inline-block"
+                        >
+                          <div className="ml-2 mr-2">
+                            {data.question}
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </div>
+                </>
+              )}
+
+
+
+
 
               <div className="flex items-center gap-2 my-4">
                 <Input
                   value={input}
                   isDarkMode={isDarkMode}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1"
+                  placeholder="Ask me a YES/NO question"
+                  className="flex-1 bg-transparent"
                   onKeyDown={async (e: any) => e.key === "Enter" && await askQuestion(input)}
                 />
                 <Button className='h-12' onClick={async () => { await askQuestion(input) }}>
                   <Send size={18} />
                 </Button>
               </div>
+              {gptConversation.length > 0 ? <>
+                You asked: {gptConversation[gptConversation.length - 1]?.question} <br />
+                Know-It-All agent says: {gptConversation[gptConversation.length - 1]?.answer}</> : <>You have not asked any questions to the Know-It-All agent! <br /> You really should, that's how the game works! 😉</>}
             </div>
           </Card>
         </div>
-        <div>
-          {/* Guessng Area */}
-          <div className="flex gap-4">
-            <Input
-              isDarkMode={isDarkMode}
-              value={guessInput}
-              onChange={(e) => setGuessInput(e.target.value)}
-              placeholder="Type your guess..."
-              className="w-full mb-4"
-              onKeyDown={async (e: any) => e.key === "Enter" && handleGuessSubmit(guessInput)}
-            />
-            <Button className="mb-4"
-              onClick={() => {
-                handleGuessSubmit(guessInput)
-              }}
-              variant="success"
-            >
-              Submit
-            </Button>
-          </div>
-          {/* Assitance Area */}
+
+        <div className="lg:col-span-2">
+
           <Card isDarkMode={isDarkMode}>
-            <div className="p-6 h-[58vh]">
+            <div className="p-6 h-[76vh]">
               <div className="flex items-start gap-4 mb-6">
                 <img
                   src={nft.image}
@@ -232,58 +247,89 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
                     {nft.name}
                   </h3>
                   <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-                    AI Agent
+                    NFT AI Agent
                   </p>
                 </div>
               </div>
 
               <div className="rounded-lg">
-                <div className='h-[35vh]'>
-                  <div className='flex flex-col h-[30vh] p-4 rounded-lg overflow-y-auto'>
+                <div className='h-[57vh]'>
+                  <div className='flex flex-col h-[50vh] p-4 rounded-lg overflow-y-auto'>
                     {agentConversation.length === 0 ? (
                       <div className='flex justify-center items-center h-full'>
                         <p className='text-gray-400'>Hi. I am your AI friend. I will help you guess the word by suggesting questions.</p>
                       </div>
                     ) : null}
                     {agentConversation.map((message, index) => (
-                      <div key={index} className='flex flex-col space-y-2'>
-                        {/* Question Bubble */}
+                      <div key={index} className="flex flex-col space-y-2">
+                        {/* User Question */}
                         {message.question && (
-                          <div className='flex justify-end'>
-                            <div className='bg-blue-500 text-white p-3 rounded-lg max-w-[70%]'>
+                          <motion.div
+                            initial={{ opacity: 0, x: 50 }} // Slide in from the right
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                            className="flex justify-end"
+                          >
+                            <div className="bg-gradient-to-r from-blue-500 to-blue-500 text-white p-3 rounded-lg max-w-[70%] shadow-lg hover:shadow-xl transition-shadow">
                               {message.question}
                             </div>
-                          </div>
+                          </motion.div>
                         )}
 
-                        {/* Answer Bubble */}
-                        <div className='flex justify-start'>
-                          <div className='bg-gray-300 text-gray-800 p-3 rounded-lg max-w-[70%]'>
+                        {/* Agent Answer */}
+                        <motion.div
+                          initial={{ opacity: 0, x: -50 }} // Slide in from the left
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          className="flex justify-start"
+                          ref={messagesEndRef}
+                        >
+                          <div className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 p-3 rounded-lg max-w-[70%] mt-2 shadow-lg hover:shadow-xl transition-shadow">
                             {message.answer}
                           </div>
-                        </div>
+                        </motion.div>
                       </div>
+
                     ))}
                   </div>
                 </div>
-                <div className={`flex items-center gap-2 mb-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <div className={`flex items-center gap-2 mb-4 bg-transparent ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <Input
                     value={suggestedQuestionInput}
                     isDarkMode={isDarkMode}
                     onChange={(e) => setSuggestedQuestionInput(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1"
+                    placeholder="Talk to your companion"
+                    className="flex-1 bg-transparent"
                     onKeyDown={async (e: any) => e.key === "Enter" && await talkToCompanion(suggestedQuestionInput)}
                   />
                   <Button className='h-12' onClick={async () => { await talkToCompanion(suggestedQuestionInput) }}>
-                    <Send size={18} />
+                    Send Message
                   </Button>
                 </div>
               </div>
             </div>
           </Card>
+          <div className="flex gap-4 mt-4">
+            <Input
+              isDarkMode={isDarkMode}
+              value={guessInput}
+              onChange={(e) => setGuessInput(e.target.value)}
+              placeholder="Submit your guess"
+              className="w-full mb-4"
+              onKeyDown={async (e: any) => e.key === "Enter" && handleGuessSubmit(guessInput)}
+            />
+            <Button className="mb-4"
+              onClick={() => {
+                handleGuessSubmit(guessInput)
+              }}
+              variant="primary"
+            >
+              Submit word
+            </Button>
+          </div>
         </div>
       </div>
+
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -295,15 +341,6 @@ export const GamePlay: React.FC<GamePlayProps> = ({ nft, isDarkMode }) => {
         </p>
       </Modal>
 
-      <button
-        onClick={logOut}
-        className={`absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 rounded ${isDarkMode
-          ? "bg-red-600 text-white hover:bg-red-700"
-          : "bg-red-500 text-white hover:bg-red-600"
-          }`}
-      >
-        Logout
-      </button>
     </div>
   );
 };

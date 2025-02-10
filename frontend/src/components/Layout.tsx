@@ -1,6 +1,9 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, LogOut, Moon, Sun } from 'lucide-react';
+import { useLogin } from '../context/UserContext';
+import { Button } from './Button';
+
 
 interface LayoutProps {
   isDarkMode: boolean;
@@ -10,6 +13,7 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ isDarkMode, onToggleDarkMode }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logOut } = useLogin();
 
   const handleBack = () => {
     const paths = {
@@ -22,11 +26,11 @@ export const Layout: React.FC<LayoutProps> = ({ isDarkMode, onToggleDarkMode }) 
   };
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-800'}`}>
+    <div className={`min-h-screen ${isDarkMode ? 'text-white' : 'bg-gray-50 text-gray-800'}`} style={{ "backgroundColor": "#160720" }}>
       {/* Navigation and Theme Toggle */}
-      <div className="fixed top-4 right-4 left-4 flex justify-between items-center z-10">
+      <div className="fixed top-4 right-4 left-4 flex justify-between items-center z-10 ml-[30px] mr-[30px]">
         {location.pathname !== '/' && (
-          <button
+          <Button
             onClick={handleBack}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg
                      ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-100'}
@@ -34,23 +38,22 @@ export const Layout: React.FC<LayoutProps> = ({ isDarkMode, onToggleDarkMode }) 
           >
             <ArrowLeft className="w-5 h-5" />
             Back
-          </button>
+          </Button>
         )}
-        <button
-          onClick={() => {
-            console.log('Toggling dark mode');
-            onToggleDarkMode();
-          }}
-          className={`p-2 rounded-lg ml-auto
-                   ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-100'}
-                   transition-colors duration-200`}
-        >
-          {isDarkMode ? (
-            <Sun className="w-5 h-5" />
-          ) : (
-            <Moon className="w-5 h-5" />
-          )}
-        </button>
+
+        {location.pathname !== '/' && (
+
+          <Button
+            onClick={logOut}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg
+                     ${isDarkMode ? 'bg-red-900 hover:bg-gray-700' : 'bg-white hover:bg-gray-100'}
+                     transition-colors duration-200`}
+          >
+            <LogOut className="w-5 h-5" />
+            Log Out
+          </Button>
+        )}
+
       </div>
 
       <div className="pt-16">
